@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vaidya.ai — Premium Ayurvedic Knowledge Assistant</title>
+  <meta name="description" content="Domain-specific RAG digital Ayurvedic assistant powered by classical texts with zero hallucination constraints and robust semantic boundaries.">
+  
+  <!-- Premium Typography Integration: Outfit for modern structural display -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Floating Glass Capsule Header Layout -->
+  <header class="floating-header">
+    <div class="nav-container">
+      <div class="brand">
+        <div class="brand-logo" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 22C2 22 2 12 10 4c0 0 8 0 12 4-8 8-10 14-10 14"></path>
+            <line x1="2" y1="22" x2="22" y2="2"></line>
+          </svg>
+        </div>
+        <div class="brand-title">Vaidya.ai</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Bounds Container -->
+  <main class="main-layout">
+    <section class="hero">
+      <h1>Deterministic Q&A Engine for Classical Ayurveda</h1>
+      <p>Interrogate traditional archives with absolute clinical safety. Backed by pinned verbatim source extraction, multi-textual TF-IDF matrix corroboration, and direct biomolecular pharmacokinetic mapping.</p>
+    </section>
+
+    <!-- Liquid Glass Refraction Query Container -->
+    <section class="query-box liquid-glass" id="query-container">
+      <div class="input-wrapper">
+        <button class="btn btn-voice" id="voice-btn" title="Speak your health query via Native Web Speech API" aria-label="Microphone Voice Input">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" y1="19" x2="12" y2="23"></line>
+            <line x1="8" y1="23" x2="16" y2="23"></line>
+          </svg>
+        </button>
+        <input type="text" class="search-input" id="search-input" placeholder="Query clinical protocols, surgical principles, or systemic pathways (e.g., Vyana Vata hypertension, wound care Upakrama)..." aria-label="Search Query Input">
+        <button class="btn btn-primary" id="search-btn" aria-label="Submit Query">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          Consult Text
+        </button>
+      </div>
+
+      <!-- Tactile Quick Mapping Chips -->
+      <div class="presets" id="presets-container">
+        <span class="presets-label">Clinical Interrogations:</span>
+        <button class="preset-chip" data-query="Standard management protocol for essential hypertension in AYUSH guidelines">Hypertension Protocol</button>
+        <button class="preset-chip" data-query="What are the sixty therapeutic measures for wound care described by Sushruta?">Shashti Upakrama</button>
+        <button class="preset-chip" data-query="Explain the role of bio-availability enhancers like Yogavahi and Anupana">Pharmacokinetics (Yogavahi)</button>
+        <button class="preset-chip" data-query="How does Haridra act in tissue repair and Vrana ropana?">Haridra Wound Repair</button>
+      </div>
+    </section>
+
+    <!-- Skeletal Display / Async Loader Feedback -->
+    <div class="loader-container" id="loader-container" aria-live="polite">
+      <div class="custom-spinner"></div>
+      <div class="loader-text">INTERROGATING LOCAL TF-IDF KNOWLEDGE MATRICES...</div>
+    </div>
+
+    <!-- Live Rendered Result Views -->
+    <section class="response-container" id="response-container" aria-live="polite">
+      <div class="result-card liquid-glass" id="result-card">
+        <div class="card-header">
+          <div class="source-badge">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+            <span id="source-badge-text">Charaka Samhita — Sutrasthana</span>
+          </div>
+          <div id="confidence-chip" class="confidence-chip high">
+            <!-- Dynamically populated payload text -->
+          </div>
+        </div>
+
+        <div class="answer-text" id="answer-text">
+          <!-- Dynamically populated answer string -->
+        </div>
+
+        <!-- Strict Zero-Hallucination Source Snippet Pin -->
+        <div class="citation-box" id="citation-box">
+          <h4>Deterministic Verbatim Source Pin</h4>
+          <div class="citation-text" id="citation-text">
+            <!-- Source text block -->
+          </div>
+        </div>
+
+        <!-- Modern Scientific Correlation Grid Area -->
+        <div class="parallel-box" id="parallel-box">
+          <div class="parallel-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+          </div>
+          <div class="parallel-content">
+            <h4>Pharmacokinetic & Biomolecular Mapping</h4>
+            <p id="parallel-text">
+              <!-- Dynamically mapped biological reasoning -->
+            </p>
+          </div>
+        </div>
+
+        <!-- Native Audio Synthesis Control Toolbar -->
+        <div class="voice-toolbar">
+          <button class="btn-tts" id="tts-btn" title="Synthesize text output using native text-to-speech module" aria-label="Toggle Audio Output">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
+            Read Answer Aloud
+          </button>
+        </div>
+      </div>
+
+      <!-- Sanskrit Terminology Floating Drawer -->
+      <div class="entities-drawer liquid-glass" id="entities-container" style="display: none;">
+        <h3>Extracted Academic Terminology Indices</h3>
+        <div class="entities-grid" id="entities-grid">
+          <!-- Populated dynamically via app.js definitions -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Clean Bottom Margin Framing Footer -->
+  <footer>
+    <p>Vaidya.ai Premium Core · Operating under Deterministic Bounded RAG Architecture</p>
+  </footer>
+
+  <!-- Custom Floating Tooltip Overlay Node -->
+  <div class="custom-tooltip" id="custom-tooltip" role="tooltip" aria-hidden="true">
+    <span class="custom-tooltip-header" id="tooltip-term"></span>
+    <div class="custom-tooltip-body" id="tooltip-def"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
