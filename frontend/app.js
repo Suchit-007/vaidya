@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const entitiesContainer = document.getElementById('entities-container');
   const entitiesGrid = document.getElementById('entities-grid');
   const ttsBtn = document.getElementById('tts-btn');
+  const downloadPdfBtn = document.getElementById('download-pdf-btn');
 
   // Backend API URL mapping
   // Defaults to same-origin relative path for unified static execution, or explicit host binding
@@ -28,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     : '';
 
   let currentAudioUtterance = null;
+  let lastResponseData = null;
 
   /**
    * Primary query execution wrapper
@@ -164,6 +166,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Unveil payload container smoothly
     responseContainer.classList.add('active');
+    
+    // Store data for PDF export and show download action
+    lastResponseData = data;
+    if (downloadPdfBtn) {
+      downloadPdfBtn.style.display = 'inline-flex';
+    }
   }
 
   /**
@@ -365,4 +373,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.speechSynthesis.speak(utterance);
   });
+
+  // --- PDF EXPORT INTEGRATION ---
+  if (downloadPdfBtn) {
+    downloadPdfBtn.addEventListener('click', async () => {
+      if (!lastResponseData) return;
+
+      try {
+        downloadPdfBtn.disabled = true;
+        downloadPdfBtn.innerHTML = `<svg class="spinner" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> Generating...`;
+
+        const response = await fetch(`${API_BASE}/api/export-pdf`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(lastResponseData)
+        });
+
+        if (!response.ok) throw new Error('PDF export failed');
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        a.download = `Vaidya_Analysis_${timestamp}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+      } catch (err) {
+        console.error('PDF Download Error:', err);
+        alert('Failed to generate clinical PDF report. Please try again.');
+      } finally {
+        downloadPdfBtn.disabled = false;
+        downloadPdfBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download Analysis PDF`;
+      }
+    });
+  }
 });
