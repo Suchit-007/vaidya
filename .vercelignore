@@ -1,0 +1,12 @@
+.env
+*.env
+__pycache__/
+*.pyc
+.pytest_cache/
+screenshots/
+scratch/
+tests/
+startup_pro/
+files/
+*.png
+!docs/assets/screenshots/*.png
