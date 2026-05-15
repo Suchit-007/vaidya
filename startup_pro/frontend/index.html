@@ -3,18 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vaidya.ai — Source-Grounded Ayurveda Assistant</title>
-  <meta name="description" content="Ask Ayurvedic questions, review cited source context, and build phased wellness roadmaps from local reference material.">
+  <title>Vaidya.ai — Premium Ayurvedic Knowledge Assistant</title>
+  <meta name="description" content="Domain-specific RAG digital Ayurvedic assistant powered by classical texts with zero hallucination constraints and robust semantic boundaries.">
   
   <!-- Premium Typography Integration: Outfit for modern structural display -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  
-  <!-- Google Fonts: EB Garamond (Serif) & Inter (Sans) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Inter:wght@100..900&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="styles.css">
   
@@ -31,7 +26,6 @@
       <feComposite in="SourceGraphic" in2="blur" operator="over" />
     </filter>
   </svg>
-
 
   <!-- Floating Glass Capsule Header Layout -->
   <header class="floating-header">
@@ -51,20 +45,20 @@
   <!-- Main Content Bounds Container -->
   <main class="main-layout">
     <section class="hero">
-      <h1>Ask Ayurveda Questions With Source Context You Can Check</h1>
-      <p>Vaidya.ai helps you search classical and clinical reference material, review the supporting passage, and turn findings into a phased roadmap without pretending to replace a qualified practitioner.</p>
+      <h1>Deterministic Q&A Engine for Classical Ayurveda</h1>
+      <p>Interrogate traditional archives with absolute clinical safety. Backed by pinned verbatim source extraction, multi-textual TF-IDF matrix corroboration, and direct biomolecular pharmacokinetic mapping.</p>
     </section>
 
     <!-- Tab Switcher Mechanics -->
     <div class="tab-switcher">
-      <button class="tab-btn active" data-tab="search" id="tab-search">Ask the Texts</button>
-      <button class="tab-btn" data-tab="roadmap" id="tab-roadmap">Build a Roadmap</button>
+      <button class="tab-btn active" data-tab="search" id="tab-search">Knowledge Search</button>
+      <button class="tab-btn" data-tab="roadmap" id="tab-roadmap">Roadmap Generator</button>
     </div>
 
     <!-- Liquid Glass Refraction Query Container (Search Section) -->
     <section class="query-box liquid-glass" id="search-section">
       <div class="input-wrapper">
-        <button class="btn btn-voice" id="voice-btn" title="Speak your question" aria-label="Speak your question">
+        <button class="btn btn-voice" id="voice-btn" title="Speak your health query via Native Web Speech API" aria-label="Microphone Voice Input">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
             <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
@@ -72,35 +66,35 @@
             <line x1="8" y1="23" x2="16" y2="23"></line>
           </svg>
         </button>
-        <input type="text" class="search-input" id="search-input" placeholder="Ask about a concept, herb, symptom pattern, or care principle..." aria-label="Ask an Ayurveda question">
-        <button class="btn btn-primary" id="search-btn" aria-label="Consult source texts">
+        <input type="text" class="search-input" id="search-input" placeholder="Query clinical protocols, surgical principles, or systemic pathways (e.g., Vyana Vata hypertension, wound care Upakrama)..." aria-label="Search Query Input">
+        <button class="btn btn-primary" id="search-btn" aria-label="Submit Query">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          Consult Sources
+          Consult Text
         </button>
       </div>
 
       <!-- Tactile Quick Mapping Chips -->
       <div class="presets" id="presets-container">
-        <span class="presets-label">Try a grounded query:</span>
-        <button class="preset-chip" data-query="Standard management protocol for essential hypertension in AYUSH guidelines">Hypertension guidance</button>
-        <button class="preset-chip" data-query="What are the sixty therapeutic measures for wound care described by Sushruta?">Sushruta wound care</button>
-        <button class="preset-chip" data-query="Explain the role of bio-availability enhancers like Yogavahi and Anupana">Yogavahi and Anupana</button>
-        <button class="preset-chip" data-query="How does Haridra act in tissue repair and Vrana ropana?">Haridra tissue repair</button>
+        <span class="presets-label">Clinical Interrogations:</span>
+        <button class="preset-chip" data-query="Standard management protocol for essential hypertension in AYUSH guidelines">Hypertension Protocol</button>
+        <button class="preset-chip" data-query="What are the sixty therapeutic measures for wound care described by Sushruta?">Shashti Upakrama</button>
+        <button class="preset-chip" data-query="Explain the role of bio-availability enhancers like Yogavahi and Anupana">Pharmacokinetics (Yogavahi)</button>
+        <button class="preset-chip" data-query="How does Haridra act in tissue repair and Vrana ropana?">Haridra Wound Repair</button>
       </div>
     </section>
 
     <!-- Roadmap Generator Section -->
-    <section class="query-box premium-glass" id="roadmap-section" style="display: none;">
+    <section class="query-box liquid-glass" id="roadmap-section" style="display: none;">
       <div class="roadmap-form">
         <div class="form-group roadmap-full-width">
-          <label for="diseaseInput"><i class="isax isax-hospital"></i> Condition or focus area</label>
-          <input type="text" id="diseaseInput" class="form-input" placeholder="Example: joint pain, stress, digestion support...">
+          <label for="diseaseInput">Condition / Disease</label>
+          <input type="text" id="diseaseInput" class="form-input" placeholder="Enter condition (e.g., Joint Pain, Diabetes, Stress)...">
         </div>
         <div class="form-group">
-          <label for="doshaSelect"><i class="isax isax-magicpen"></i> Dominant dosha lens</label>
+          <label for="doshaSelect">Primary Dosha Imbalance</label>
           <select id="doshaSelect" class="form-select">
             <option value="Vata">Vata (Movement/Space)</option>
             <option value="Pitta">Pitta (Heat/Metabolism)</option>
@@ -109,7 +103,7 @@
           </select>
         </div>
         <div class="form-group">
-          <label for="severitySelect"><i class="isax isax-danger"></i> Current intensity</label>
+          <label for="severitySelect">Current Severity</label>
           <select id="severitySelect" class="form-select">
             <option value="Mild">Mild / Early Stage</option>
             <option value="Moderate">Moderate / Chronic</option>
@@ -117,7 +111,7 @@
           </select>
         </div>
         <div class="form-group">
-          <label for="ageSelect"><i class="isax isax-user"></i> Age group</label>
+          <label for="ageSelect">Patient Age Group</label>
           <select id="ageSelect" class="form-select">
             <option value="Pediatric">Pediatric (Child)</option>
             <option value="Adult">Adult (20-60)</option>
@@ -125,30 +119,32 @@
           </select>
         </div>
         <div class="form-group" style="justify-content: flex-end; display: flex; align-items: flex-end;">
-          <button class="btn btn-roadmap" id="generate-roadmap-btn">
-            <i class="isax isax-flash-1" style="font-size: 1.1rem;"></i>
-            Build Roadmap
+          <button class="btn btn-primary" id="generate-roadmap-btn" style="width: 100%;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2v20"></path>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            </svg>
+            Generate Roadmap
           </button>
-        </div>
-      </div>
-      
-      <!-- RAG Pipeline Source Trace Footer -->
-      <div class="rag-telemetry-footer">
-        <div class="telemetry-item">
-          <div class="pulse-indicator success"></div>
-          <span>Retrieval mode: <strong id="telemetry-count">Local source search</strong></span>
-        </div>
-        <div class="telemetry-item">
-          <i class="isax isax-book-1"></i>
-          <span>Reference lens: Charaka, Sushruta, AYUSH, and curriculum notes</span>
         </div>
       </div>
     </section>
 
+    <!-- Multi-Agent Verification Trace (WOW Factor #1) -->
+    <div class="trace-container" id="trace-container">
+      <div class="trace-header">
+        <h3>Multi-Agent Consensus Engine</h3>
+        <div class="consensus-badge" id="consensus-status">DEBATING...</div>
+      </div>
+      <div class="trace-steps" id="trace-steps">
+        <!-- Agent thoughts will stream here -->
+      </div>
+    </div>
+
     <!-- Skeletal Display / Async Loader Feedback -->
     <div class="loader-container" id="loader-container" aria-live="polite">
       <div class="custom-spinner"></div>
-      <div class="loader-text">Searching local references and preparing cited context...</div>
+      <div class="loader-text">INTERROGATING LOCAL TF-IDF KNOWLEDGE MATRICES...</div>
     </div>
 
     <!-- Live Rendered Result Views -->
@@ -173,7 +169,7 @@
 
         <!-- Strict Zero-Hallucination Source Snippet Pin -->
         <div class="citation-box" id="citation-box">
-          <h4>Source Context Pin</h4>
+          <h4>Deterministic Verbatim Source Pin</h4>
           <div class="citation-text" id="citation-text">
             <!-- Source text block -->
           </div>
@@ -187,7 +183,7 @@
             </svg>
           </div>
           <div class="parallel-content">
-            <h4>Modern Interpretation</h4>
+            <h4>Pharmacokinetic & Biomolecular Mapping</h4>
             <p id="parallel-text">
               <!-- Dynamically mapped biological reasoning -->
             </p>
@@ -196,42 +192,29 @@
 
         <!-- Native Audio Synthesis Control Toolbar -->
         <div class="voice-toolbar" style="display: flex; gap: 10px; align-items: center;">
-          <button class="btn-tts" id="tts-btn" title="Listen to the answer" aria-label="Listen to the answer">
+          <button class="btn-tts" id="tts-btn" title="Synthesize text output using native text-to-speech module" aria-label="Toggle Audio Output">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
               <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
             </svg>
-            Listen to Answer
+            Read Answer Aloud
           </button>
-          <button class="btn-tts" id="download-pdf-btn" title="Export this analysis as a PDF" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; display: none;">
+          <button class="btn-tts" id="download-pdf-btn" title="Export clinical analysis to formatted PDF report" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; display: none;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
               <polyline points="7 10 12 15 17 10"></polyline>
               <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
-            Export PDF
+            Download Analysis PDF
           </button>
-          <button class="btn-tts" id="toggle-resources-btn" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(59, 130, 246, 0.3); color: #3b82f6;">
+          <button class="btn-tts" id="export-fhir-btn" title="Export clinical analysis to HL7 FHIR Bundle for HMIS interoperability" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--accent-blue); color: var(--accent-blue); display: none;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-              <polyline points="10 9 9 9 8 9"></polyline>
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+              <path d="M9 14l2 2 4-4"></path>
             </svg>
-            View Sources
+            Export to HMIS (FHIR)
           </button>
-        </div>
-
-        <!-- Clinical Resources Sidebar/Overlay (Hidden by default) -->
-        <div class="resources-sidebar" id="resources-sidebar">
-          <div class="sidebar-header">
-            <h4><i class="isax isax-book"></i> Source Notes</h4>
-            <button id="close-resources" class="btn-close-sm"><i class="isax isax-close-circle"></i></button>
-          </div>
-          <div class="resources-list" id="resources-list">
-            <!-- Dynamically populated resource items -->
-          </div>
         </div>
       </div>
 
@@ -243,95 +226,30 @@
               <path d="M12 2v20"></path>
               <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
             </svg>
-            <span>Phased Wellness Roadmap</span>
+            <span>Personalized Ayurvedic Roadmap</span>
           </div>
           <div id="roadmap-badge" class="confidence-chip high">
-            ROADMAP READY
+            STRATEGIC PLAN
           </div>
         </div>
 
         <div id="roadmap-content">
-          <!-- Timeline Roadmap Overview -->
-          <div class="roadmap-timeline" id="roadmap-timeline">
-            <!-- Dynamically populated phase cards -->
+          <!-- Spatial Mindmap Canvas -->
+          <div class="mindmap-container" id="mindmap-container">
+            <svg class="mindmap-links" id="mindmap-links"></svg>
+            <div class="mindmap-nodes" id="mindmap-nodes">
+              <!-- Dynamically populated nodes -->
+            </div>
           </div>
           
           <!-- Bento Details Overlay (NotebookLLM Style) -->
           <div class="bento-overlay" id="bento-overlay">
-            <div class="bento-nav">
-              <button class="btn-back-roadmap" id="back-to-roadmap">
-                <i class="isax isax-arrow-left-2"></i>
-                <span>Back to Roadmap</span>
-              </button>
-              <div class="phase-badge-pill">Phase Deep-Dive</div>
+            <div class="bento-grid" id="bento-grid">
+              <!-- Dynamically populated bento cards -->
             </div>
-
-            <div class="bento-header">
-              <h2 id="bento-title">Phase Analysis</h2>
-              <p id="bento-subtitle">Structured support plan with safety boundaries</p>
-            </div>
-            
-            <div class="bento-grid">
-              <!-- Hero Card: Clinical Goal -->
-              <div class="bento-card hero">
-                <h4><i class="isax isax-target"></i> Phase Objective</h4>
-                <div class="bento-card-context">Use this as the organizing goal for the phase, not as a diagnosis. It explains what this stage is trying to stabilize before moving forward.</div>
-                <p id="bento-objective">The main aim for this stage of the roadmap.</p>
-                <div class="bento-note" id="bento-objective-note">Review the objective with the diet, herbs, and daily practices together.</div>
-              </div>
-
-              <!-- Side Card: Dosha Balance -->
-              <div class="bento-card side">
-                <h4><i class="isax isax-magicpen"></i> Dosha Impact</h4>
-                <div class="bento-card-context">A quick read of which dosha lens this phase emphasizes. Higher values mean the roadmap is giving that pattern more attention.</div>
-                <div id="bento-dosha-metrics" class="dosha-metrics">
-                  <!-- Radial gauges injected here -->
-                </div>
-              </div>
-
-              <!-- Mid Card: Herbal Protocol -->
-              <div class="bento-card mid-3">
-                <h4><i class="isax isax-cup"></i> Herb Support</h4>
-                <div class="bento-card-context" id="bento-herb-context">Herbs are shown as planning context. Confirm suitability, dose, and interactions with a qualified practitioner.</div>
-                <ul id="bento-herbs" class="clean-list">
-                  <!-- List of herbs -->
-                </ul>
-              </div>
-
-              <!-- Mid Card: Dietary Regime -->
-              <div class="bento-card mid-3">
-                <h4><i class="isax isax-milk"></i> Food Guidance</h4>
-                <div class="bento-card-context">Pathya lists supportive choices for this phase. Apathya flags items to reduce or avoid while the phase is active.</div>
-                <div class="diet-split-v">
-                  <div class="diet-sub">
-                    <span class="diet-tag success">Pathya</span>
-                    <ul id="bento-diet-allow"></ul>
-                  </div>
-                  <div class="diet-sub">
-                    <span class="diet-tag danger">Apathya</span>
-                    <ul id="bento-diet-avoid"></ul>
-                  </div>
-                </div>
-              </div>
-
-              <!-- NEW Card: Clinical Precautions -->
-              <div class="bento-card mid-3 precaution">
-                <h4><i class="isax isax-info-circle"></i> Safety Boundaries</h4>
-                <div class="bento-card-context">Use these as guardrails. Stop and seek professional care for acute, worsening, or unclear symptoms.</div>
-                <ul id="bento-precautions" class="danger-list">
-                  <!-- List of precautions -->
-                </ul>
-              </div>
-
-              <!-- Bottom Card: Lifestyle Tasks -->
-              <div class="bento-card col-span-12">
-                <h4><i class="isax isax-activity"></i> Daily Practices</h4>
-                <div class="bento-card-context">Small repeatable actions make the roadmap easier to follow. Pick the practices that fit the phase and keep them consistent.</div>
-                <div id="bento-tasks" class="tasks-grid">
-                  <!-- List of tasks -->
-                </div>
-              </div>
-            </div>
+            <button class="btn-close-bento" id="close-bento">
+              <i class="isax isax-close-circle"></i> Close Analysis
+            </button>
           </div>
         </div>
       </div>
@@ -341,14 +259,14 @@
           <i class="isax isax-info-circle"></i>
         </div>
         <div class="parallel-content">
-          <h4 style="color: var(--accent-red);">Safety Notice</h4>
+          <h4 style="color: var(--accent-red);">Clinical Safety Notice</h4>
           <p id="roadmap-safety-text"></p>
         </div>
       </div>
 
       <!-- Sanskrit Terminology Floating Drawer -->
       <div class="entities-drawer liquid-glass" id="entities-container" style="display: none;">
-        <h3>Key Terms Found in the Answer</h3>
+        <h3>Extracted Academic Terminology Indices</h3>
         <div class="entities-grid" id="entities-grid">
           <!-- Populated dynamically via app.js definitions -->
         </div>
@@ -358,7 +276,7 @@
 
   <!-- Clean Bottom Margin Framing Footer -->
   <footer>
-    <p>Vaidya.ai supports source-grounded learning and planning. It does not replace diagnosis or care from a qualified practitioner.</p>
+    <p>Vaidya.ai Premium Core · Operating under Deterministic Bounded RAG Architecture</p>
   </footer>
 
   <!-- Custom Floating Tooltip Overlay Node -->

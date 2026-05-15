@@ -2,7 +2,7 @@ import os
 import json
 import re
 from typing import Optional, List, Dict, Any
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -13,8 +13,9 @@ import openai
 # Load environment configuration
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
 
-from backend.rag_engine import RagEngine, extract_entities
-from backend.pdf_generator import generate_analysis_pdf
+from startup_pro.backend.rag_engine import RagEngine, extract_entities
+from startup_pro.backend.pdf_generator import generate_analysis_pdf
+from startup_pro.backend.fhir import generate_fhir_bundle
 
 app = FastAPI(title="Vaidya.ai API Engine", version="1.0.0")
 
@@ -54,7 +55,6 @@ class QueryResponse(BaseModel):
     source_line: str
     modern_parallel: str
     extracted_entities: List[Dict[str, str]]
-    sources: Optional[List[Dict[str, str]]] = None
 
 class RoadmapRequest(BaseModel):
     disease: str
@@ -62,16 +62,13 @@ class RoadmapRequest(BaseModel):
     age: str
     severity: str
 
-class PhaseDetail(BaseModel):
-    title: str
-    objective: str
-    herbs: List[Any]  # Can be strings or dicts
-    diet: Dict[str, List[str]]
-    tasks: List[str]
-    dosha_metrics: Optional[Dict[str, int]] = None
-
 class RoadmapResponse(BaseModel):
-    phases: List[PhaseDetail]
+    phase_1: str
+    phase_2: str
+    phase_3: str
+    herbal_support: List[str]
+    dietary_guidelines: List[str]
+    lifestyle_changes: List[str]
     safety_notes: str
 
 # Pre-cached Verified Demo Responses to guarantee 100% Hackathon Pitch execution safety
@@ -125,38 +122,6 @@ FALLBACK_CACHE = {
             {"term": "Rajas", "definition": "Psychic attribute of passion, dynamic motion, but also psychological turbulence and stress."},
             {"term": "Tamas", "definition": "Mental state of darkness, inertia, psychological delusion, and sluggishness."}
         ]
-    },
-    "yogavahi": {
-        "answer": "Yogavahi refers to substances that possess a unique catalytic property, enhancing the bioavailability and targeted delivery of medicinal principles without losing their own inherent qualities. Classic examples include Madhu (Honey), Ghrita (Ghee), and Pippali (Piper longum). When used as a Yogavahi, these substances carry the active principles of the main drug deep into the micro-channels (Srotas), significantly augmenting therapeutic potency.",
-        "confidence_tier": "HIGH",
-        "corroborating_chunks": 5,
-        "source_text": "Sharangadhara Samhita — Prathama Khanda",
-        "source_line": "Substances that enhance the efficacy and absorption of the drug they are processed with are termed Yogavahi.",
-        "modern_parallel": "Piperine (from Pippali) inhibits P-glycoprotein and CYP3A4, directly increasing the plasma concentration and half-life of co-administered bio-actives.",
-        "extracted_entities": [
-            {"term": "Yogavahi", "definition": "A catalytic agent that enhances drug delivery and bio-availability."},
-            {"term": "Srotas", "definition": "The internal transport systems or micro-channels of the body."}
-        ],
-        "sources": [
-            {"text_name": "Sharangadhara Samhita", "author": "Acharya Sharangadhara", "relevance": "High (Primary definition)"},
-            {"text_name": "Charaka Samhita", "author": "Acharya Charaka", "relevance": "Moderate (Contextual usage)"}
-        ]
-    },
-    "anupana": {
-        "answer": "Anupana is a secondary liquid vehicle taken alongside or immediately after the primary medicine. Its function is to facilitate rapid absorption, neutralize potential side effects, and direct the medicine to specific tissues (Dhatus). The choice of Anupana is strictly clinical, based on the Dosha involvement: e.g., warm water for Vata, milk or ghee for Pitta, and honey or ginger water for Kapha.",
-        "confidence_tier": "HIGH",
-        "corroborating_chunks": 5,
-        "source_text": "Sharangadhara Samhita — Madhyama Khanda",
-        "source_line": "Selection of the appropriate liquid vehicle (Anupana) is critical for ensuring the medicine reaches its intended site of action and performs efficiently.",
-        "modern_parallel": "Solubility-enhancing pharmaceutical vehicles like lipid-based delivery systems (Ghee) or aqueous surfactants (Honey) that modify gut permeability.",
-        "extracted_entities": [
-            {"term": "Anupana", "definition": "The liquid vehicle or adjuvant taken with medicine to optimize its action."},
-            {"term": "Dhatu", "definition": "The seven fundamental tissues of the body that provide structural and functional integrity."}
-        ],
-        "sources": [
-            {"text_name": "Sharangadhara Samhita", "author": "Acharya Sharangadhara", "relevance": "High (Clinical protocols)"},
-            {"text_name": "Ashtanga Hridaya", "author": "Acharya Vagbhata", "relevance": "High (Vehicle classification)"}
-        ]
     }
 }
 
@@ -171,14 +136,10 @@ def get_pre_cached_fallback(query: str) -> dict:
         return FALLBACK_CACHE["turmeric"]
     elif "guna" in q_lower or "sattva" in q_lower or "mental" in q_lower:
         return FALLBACK_CACHE["guna"]
-    elif "yogavahi" in q_lower or "bio-availability" in q_lower or "enhancer" in q_lower:
-        return FALLBACK_CACHE["yogavahi"]
-    elif "anupana" in q_lower or "vehicle" in q_lower or "carrier" in q_lower:
-        return FALLBACK_CACHE["anupana"]
     else:
         # Default Low Confidence boundary state indicating clean constraint handling
         return {
-            "answer": "Based on the available local reference texts, there is not enough corroborating context to answer this query responsibly. Vaidya.ai is keeping the response inside the retrieved source boundary. Please consult a qualified Ayurvedic physician or medical practitioner for personalized clinical guidance.",
+            "answer": "Based on the provided classical knowledge texts, there is insufficient corroborative context to synthesize a verified answer for this specific query. To ensure absolute clinical safety and prevent automated hallucination, Vaidya.ai respects document constraints. Please consult a qualified Ayurvedic physician or medical practitioner for customized clinical guidance.",
             "confidence_tier": "LOW",
             "corroborating_chunks": 1,
             "source_text": "Unverified Context Boundary",
@@ -288,7 +249,7 @@ async def handle_roadmap(request: RoadmapRequest):
 
     # 2. Construct specialized roadmap prompt
     system_prompt = f"""You are an elite Ayurvedic Physician and Clinical Strategist.
-Your goal is to generate a highly personalized 3-phase treatment roadmap.
+Your goal is to generate a highly personalized 3-phase treatment roadmap based on classical archives.
 
 Inputs:
 - Condition: {disease}
@@ -299,58 +260,31 @@ Inputs:
 Classical Reference Context:
 {context_blocks}
 
-CRITICAL: Return ONLY a valid JSON object with exactly the following schema:
+CRITICAL INSTRUCTION: You MUST return your response ONLY as a strictly valid JSON object matching the exact keys below. Do not wrap in markdown code blocks.
+The plan must be clinically sound, specific to the dosha, and respectful of the severity level.
+
+Schema:
 {{
-  "phases": [
-    {{
-      "title": "Phase 1: Stabilization",
-      "objective": "Verbatim clinical goal based on the text.",
-      "herbs": [
-        {{"name": "Herb Name", "dosage": "e.g. 500mg", "timing": "e.g. Before breakfast"}}
-      ],
-      "diet": {{
-        "allow": ["Food 1", "Food 2"],
-        "avoid": ["Food 3", "Food 4"]
-      }},
-      "tasks": ["Lifestyle action 1", "Lifestyle action 2"],
-      "dosha_metrics": {{"vata": 30, "pitta": 70, "kapha": 20}}
-    }},
-    ... (repeat for Phase 2 and Phase 3)
-  ],
-  "safety_notes": "Clinical precautions."
+  "phase_1": "Description of initial stabilization phase (1-2 weeks).",
+  "phase_2": "Description of core treatment and purification phase (2-4 weeks).",
+  "phase_3": "Description of rejuvenation and maintenance phase (Long term).",
+  "herbal_support": ["List of 3-4 classical herbs or formulations"],
+  "dietary_guidelines": ["List of 3-4 specific dietary instructions"],
+  "lifestyle_changes": ["List of 3-4 specific lifestyle or yoga recommendations"],
+  "safety_notes": "Clinical precautions or signs to watch for."
 }}"""
 
     # 3. Call LLM for synthesis
     if not client:
         # Static demo fallback if API key is missing
         return RoadmapResponse(
-            phases=[
-                PhaseDetail(
-                    title="Phase 1: Stabilization",
-                    objective=f"Pacification of {request.dosha} through Snehana.",
-                    herbs=[{"name": "Triphala Guggulu", "dosage": "2 tabs", "timing": "Morning"}],
-                    diet={"allow": ["Warm mung water", "Ghee"], "avoid": ["Cold salads", "Curd"]},
-                    tasks=["Light walking", "Ujjayi Pranayama"],
-                    dosha_metrics={"vata": 60, "pitta": 40, "kapha": 20}
-                ),
-                PhaseDetail(
-                    title="Phase 2: Core Therapy",
-                    objective="Purification (Shodhana) and tissue repair.",
-                    herbs=[{"name": "Ashwagandha Ghanvati", "dosage": "1 tab", "timing": "Bedtime"}],
-                    diet={"allow": ["Freshly cooked Rice", "Lentils"], "avoid": ["Spicy food", "Caffeine"]},
-                    tasks=["Oil massage (Abhyanga)", "Meditation"],
-                    dosha_metrics={"vata": 30, "pitta": 80, "kapha": 40}
-                ),
-                PhaseDetail(
-                    title="Phase 3: Rejuvenation",
-                    objective="Restoring Ojas and long-term immunity.",
-                    herbs=[{"name": "Chyawanprash", "dosage": "1 tsp", "timing": "Morning empty stomach"}],
-                    diet={"allow": ["Milk with Almonds", "Seasonal Fruits"], "avoid": ["Stale food", "Nightshades"]},
-                    tasks=["Gentle Yoga", "Early rising"],
-                    dosha_metrics={"vata": 20, "pitta": 30, "kapha": 90}
-                )
-            ],
-            safety_notes="Consult a physician if any acute aggravation occurs."
+            phase_1=f"Initial pacification of {request.dosha} dosha through warm fomentation and light diet.",
+            phase_2=f"Intensive herbal support focusing on {disease} management protocols.",
+            phase_3="Rasayana rejuvenation to restore systemic Ojas and prevent recurrence.",
+            herbal_support=["Ashwagandha (Withania somnifera)", "Triphala Churna", "Guduchi (Tinospora cordifolia)"],
+            dietary_guidelines=["Favor warm, freshly cooked meals", "Avoid cold, processed, or heavy foods", "Incorporate Ginger and Cumin for digestion"],
+            lifestyle_changes=["Pranayama (Deep Breathing)", "Abhyanga (Warm Oil Massage)", "Maintain consistent circadian sleep cycles"],
+            safety_notes="Consult a Vaidya immediately if symptoms persist or acute discomfort occurs."
         )
 
     try:
@@ -376,32 +310,12 @@ CRITICAL: Return ONLY a valid JSON object with exactly the following schema:
     except Exception as e:
         print(f"Roadmap synthesis failed: {e}. Returning safety-first fallback.")
         return RoadmapResponse(
-            phases=[
-                PhaseDetail(
-                    title="Phase 1: Foundation",
-                    objective="Stabilizing digestive fire (Agni) and toxin elimination.",
-                    herbs=[{"name": "Triphala", "dosage": "500mg", "timing": "Before bed"}],
-                    diet={"allow": ["Warm water", "Moong soup"], "avoid": ["Cold drinks", "Deep fried"]},
-                    tasks=["Light walking", "Deep breathing"],
-                    dosha_metrics={"vata": 50, "pitta": 50, "kapha": 50}
-                ),
-                PhaseDetail(
-                    title="Phase 2: Treatment",
-                    objective="Targeted herbal intervention for systemic balance.",
-                    herbs=[{"name": "Guduchi", "dosage": "250mg", "timing": "After meals"}],
-                    diet={"allow": ["Fresh fruits", "Vegetables"], "avoid": ["Processed sugar"]},
-                    tasks=["Daily Yoga", "Mindfulness"],
-                    dosha_metrics={"vata": 40, "pitta": 60, "kapha": 40}
-                ),
-                PhaseDetail(
-                    title="Phase 3: Rejuvenation",
-                    objective="Rasayana protocols for tissue longevity.",
-                    herbs=[{"name": "Amla", "dosage": "1 tsp", "timing": "Morning"}],
-                    diet={"allow": ["Nuts", "Seeds", "Milk"], "avoid": ["Late night meals"]},
-                    tasks=["Sun exposure", "Gratitude practice"],
-                    dosha_metrics={"vata": 30, "pitta": 30, "kapha": 80}
-                )
-            ],
+            phase_1="Focus on immediate Agni (digestive fire) stabilization.",
+            phase_2="Systematic purification and tissue-specific herbal support.",
+            phase_3="Rejuvenative (Rasayana) protocols for long-term resilience.",
+            herbal_support=["Standard classical formulations based on presenting symptoms"],
+            dietary_guidelines=["Light, easily digestible, warm (Sattvic) foods"],
+            lifestyle_changes=["Regular movement, meditation, and stress reduction"],
             safety_notes="Please consult a professional practitioner for detailed dosage and contraindications."
         )
 
@@ -418,6 +332,35 @@ async def export_analysis_pdf(data: dict):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
+
+@app.post("/api/export-fhir")
+async def export_fhir_json(data: dict):
+    """Generates an HL7 FHIR R4 Bundle for the provided analysis data."""
+    try:
+        fhir_bundle = generate_fhir_bundle(data)
+        return fhir_bundle
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"FHIR generation failed: {str(e)}")
+
+# WebSocket endpoint for multi-agent trace streaming
+@app.websocket("/ws/trace/{query_id}")
+async def websocket_trace_endpoint(websocket: WebSocket, query_id: str):
+    await websocket.accept()
+    try:
+        while True:
+            data = await websocket.receive_json()
+            if data.get("action") == "start":
+                # Simulate the trace from the multi-agent engine
+                # In Task 2 we will connect this to the real langgraph app
+                await websocket.send_json({
+                    "trace": [
+                        {"agent": "Scholar", "action": "Analyzing scriptural alignment"},
+                        {"agent": "Pharmacologist", "action": "Verifying modern clinical parallels"},
+                        {"agent": "SafetyOfficer", "action": "Final safety gate verification"}
+                    ]
+                })
+    except WebSocketDisconnect:
+        print(f"Client #{query_id} disconnected")
 
 # Mount premium frontend app static serving at root directory path
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")

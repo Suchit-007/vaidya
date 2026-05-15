@@ -8,19 +8,6 @@ try:
 except ImportError:
     pypdf = None
 
-class QueryResult(dict):
-    """Dictionary API response with compatibility access for legacy score checks."""
-    def __len__(self):
-        return len(self.get("top_chunks", []))
-
-    def __getitem__(self, key):
-        if isinstance(key, int):
-            return {
-                "chunk": self["top_chunks"][key],
-                "confidence_score": self.get("scores", [])[key],
-            }
-        return super().__getitem__(key)
-
 class RagEngine:
     def __init__(self, data_path: str):
         self.data_path = data_path
@@ -72,16 +59,10 @@ class RagEngine:
             if is_pdf:
                 if pypdf is None:
                     continue
-                try:
-                    reader = pypdf.PdfReader(file_path)
-                except Exception:
-                    continue
+                reader = pypdf.PdfReader(file_path)
                 full_text = []
                 for page in reader.pages:
-                    try:
-                        extracted = page.extract_text()
-                    except Exception:
-                        extracted = None
+                    extracted = page.extract_text()
                     if extracted:
                         full_text.append(extracted)
                 combined_text = " ".join(full_text)
@@ -122,10 +103,8 @@ class RagEngine:
         self._build_tfidf_index()
 
     def _tokenize(self, text: str) -> List[str]:
-        """Lowercase tokenization retaining adjacent bigrams for phrase matching."""
-        unigrams = re.findall(r'\b[a-z]{3,}\b', text.lower())
-        bigrams = [f"{unigrams[i]} {unigrams[i + 1]}" for i in range(len(unigrams) - 1)]
-        return unigrams + bigrams
+        """Simple lowercase alphanumeric tokenization."""
+        return re.findall(r'\b[a-z]{3,}\b', text.lower())
 
     def _build_tfidf_index(self):
         """Builds an extremely precise, efficient inline TF-IDF matrix for pure offline RAG."""
@@ -167,16 +146,20 @@ class RagEngine:
         norms[norms == 0] = 1.0
         self.tf_idf_matrix = self.tf_idf_matrix / norms
 
-    def query(self, search_text: str, top_k: int = 3) -> Dict[str, Any]:
-        """Executes ultra-fast hybrid retrieval over local indexed vectors."""
+    def query(self, search_text: str, top_k: int = 3, month: int = None, day: int = None) -> Dict[str, Any]:
+        """Executes ultra-fast hybrid retrieval over local indexed vectors with seasonal context."""
+        from startup_pro.backend.ritu_engine import get_current_ritu, get_ritu_adjustments
+        
+        ritu = get_current_ritu(month, day)
+        ritu_data = get_ritu_adjustments(ritu)
+        aggravated_doshas = ritu_data["aggravated_doshas"]
         tokens = self._tokenize(search_text)
         if not tokens or len(self.vocab) == 0:
-            return QueryResult({
+            return {
                 "top_chunks": self.chunks[:top_k],
-                "scores": [0.0 for _ in self.chunks[:top_k]],
                 "confidence_tier": "LOW",
                 "corroborating_chunks": 1
-            })
+            }
 
         # Query Vectorization
         query_vec = np.zeros(len(self.vocab), dtype=np.float32)
@@ -200,6 +183,11 @@ class RagEngine:
             overlap_count = sum(1 for t in tokens if t in chunk_lower)
             # Add bonus boost for keyword density
             similarities[idx] += overlap_count * 0.08
+            
+            # Seasonal (Ritu) Boost: Reward chunks mentioning current aggravated doshas
+            for dosha in aggravated_doshas:
+                if dosha.lower() in chunk_lower:
+                    similarities[idx] += 0.1 # Seasonal relevance boost
 
         # Rank documents
         ranked_indices = np.argsort(similarities)[::-1]
@@ -231,12 +219,13 @@ class RagEngine:
             confidence_tier = "LOW"
             adjusted_corroboration = 1
 
-        return QueryResult({
+        return {
             "top_chunks": [r["chunk"] for r in results],
             "scores": [r["score"] for r in results],
             "confidence_tier": confidence_tier,
-            "corroborating_chunks": adjusted_corroboration
-        })
+            "corroborating_chunks": adjusted_corroboration,
+            "ritu": ritu
+        }
 
 # Pre-defined domain entities dictionary to highlight absolute innovation
 AYURVEDIC_ENTITIES = {
