@@ -12,8 +12,20 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="styles.css">
+  
+  <!-- Premium Animation & Icon Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/iconsax-web@1.0.0/style.css">
 </head>
 <body>
+
+  <!-- Hidden SVG Filter Suite -->
+  <svg style="position: absolute; width: 0; height: 0;" aria-hidden="true">
+    <filter id="premium-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </svg>
 
   <!-- Floating Glass Capsule Header Layout -->
   <header class="floating-header">
@@ -203,7 +215,33 @@
         </div>
 
         <div id="roadmap-content">
-          <!-- Dynamically populated roadmap content -->
+          <!-- Spatial Mindmap Canvas -->
+          <div class="mindmap-container" id="mindmap-container">
+            <svg class="mindmap-links" id="mindmap-links"></svg>
+            <div class="mindmap-nodes" id="mindmap-nodes">
+              <!-- Dynamically populated nodes -->
+            </div>
+          </div>
+          
+          <!-- Bento Details Overlay (NotebookLLM Style) -->
+          <div class="bento-overlay" id="bento-overlay">
+            <div class="bento-grid" id="bento-grid">
+              <!-- Dynamically populated bento cards -->
+            </div>
+            <button class="btn-close-bento" id="close-bento">
+              <i class="isax isax-close-circle"></i> Close Analysis
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="parallel-box roadmap-safety-notice" id="roadmap-safety-notice" style="display: none; margin-top: 1.5rem; border-color: rgba(244, 63, 94, 0.2);">
+        <div class="parallel-icon" style="color: var(--accent-red);">
+          <i class="isax isax-info-circle"></i>
+        </div>
+        <div class="parallel-content">
+          <h4 style="color: var(--accent-red);">Clinical Safety Notice</h4>
+          <p id="roadmap-safety-text"></p>
         </div>
       </div>
 

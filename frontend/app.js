@@ -346,71 +346,174 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderPlan(plan) {
-    const roadmapContent = document.getElementById('roadmap-content');
+    const nodesContainer = document.getElementById('mindmap-nodes');
+    const linksContainer = document.getElementById('mindmap-links');
+    const safetyNotice = document.getElementById('roadmap-safety-notice');
+    const safetyText = document.getElementById('roadmap-safety-text');
     
-    // Construct premium timeline and grid layout
-    let html = `
-      <div class="roadmap-timeline">
-        <div class="milestone-item">
-          <div class="milestone-dot"><svg width="10" height="10" viewBox="0 0 24 24" fill="var(--accent-gold)"><circle cx="12" cy="12" r="10"/></svg></div>
-          <div class="milestone-content">
-            <h4>Phase 1: Initial Stabilization</h4>
-            <p>${plan.phase_1 || "Focus on pacifying immediate aggravation and clearing metabolic waste (Ama)."}</p>
-          </div>
-        </div>
-        <div class="milestone-item">
-          <div class="milestone-dot"><svg width="10" height="10" viewBox="0 0 24 24" fill="var(--accent-gold)"><circle cx="12" cy="12" r="10"/></svg></div>
-          <div class="milestone-content">
-            <h4>Phase 2: Core Therapy</h4>
-            <p>${plan.phase_2 || "Targeted herbal support and lifestyle modifications for root-cause correction."}</p>
-          </div>
-        </div>
-        <div class="milestone-item">
-          <div class="milestone-dot"><svg width="10" height="10" viewBox="0 0 24 24" fill="var(--accent-gold)"><circle cx="12" cy="12" r="10"/></svg></div>
-          <div class="milestone-content">
-            <h4>Phase 3: Rejuvenation</h4>
-            <p>${plan.phase_3 || "Rasayana therapy to strengthen immunity and prevent recurrence."}</p>
-          </div>
-        </div>
-      </div>
+    // Clear previous
+    nodesContainer.innerHTML = '';
+    linksContainer.innerHTML = '';
+    
+    const disease = document.getElementById('diseaseInput').value.trim() || "Condition";
+    
+    // Define spatial layout (relative coordinates)
+    const centerX = 50;
+    const centerY = 50;
+    const phases = [
+      { id: 'p1', label: 'Phase 1', title: 'Stabilization', angle: -30, distance: 35, icon: 'isax-status-up', data: plan.phase_1 },
+      { id: 'p2', label: 'Phase 2', title: 'Core Therapy', angle: 90, distance: 35, icon: 'isax-health', data: plan.phase_2 },
+      { id: 'p3', label: 'Phase 3', title: 'Rejuvenation', angle: 210, distance: 35, icon: 'isax-magic-star', data: plan.phase_3 }
+    ];
 
-      <div class="roadmap-grid">
-        <div class="roadmap-section-card">
-          <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Herbal Support</h4>
-          <ul>
-            ${(plan.herbal_support || ["Botanical extracts as per classical archives"]).map(h => `<li>${h}</li>`).join('')}
-          </ul>
-        </div>
-        <div class="roadmap-section-card">
-          <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg> Dietary Regimen</h4>
-          <ul>
-            ${(plan.dietary_guidelines || ["Pathya (favorable) diet following Ritucharya"]).map(d => `<li>${d}</li>`).join('')}
-          </ul>
-        </div>
-        <div class="roadmap-section-card">
-          <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg> Lifestyle & Yoga</h4>
-          <ul>
-            ${(plan.lifestyle_changes || ["Vihara (lifestyle) adjustments for circadian balance"]).map(l => `<li>${l}</li>`).join('')}
-          </ul>
-        </div>
-      </div>
-
-      <div class="parallel-box" style="margin-top: 1.5rem; border-color: rgba(239, 68, 68, 0.2);">
-        <div class="parallel-icon" style="color: var(--accent-red);">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        </div>
-        <div class="parallel-content">
-          <h4 style="color: var(--accent-red);">Clinical Safety Notice</h4>
-          <p>${plan.safety_notes || "This roadmap is synthesized for educational insight. Professional clinical evaluation is mandatory before starting any therapy."}</p>
-        </div>
-      </div>
+    // 1. Create Hub (Central Node)
+    const hubNode = document.createElement('div');
+    hubNode.className = 'mm-node hub';
+    hubNode.style.left = `${centerX}%`;
+    hubNode.style.top = `${centerY}%`;
+    hubNode.style.transform = 'translate(-50%, -50%) scale(0)';
+    hubNode.innerHTML = `
+      <i class="isax isax-judge"></i>
+      <span>${disease}</span>
+      <div class="label">Primary Analysis</div>
     `;
+    nodesContainer.appendChild(hubNode);
 
-    roadmapContent.innerHTML = html;
+    // 2. Create Phase Nodes & Links
+    phases.forEach((p, index) => {
+      const rad = (p.angle * Math.PI) / 180;
+      const x = centerX + p.distance * Math.cos(rad);
+      const y = centerY + p.distance * Math.sin(rad);
+
+      // Create SVG Path Link
+      const link = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      link.setAttribute("class", "link-path");
+      link.setAttribute("d", `M ${centerX}% ${centerY}% L ${x}% ${y}%`);
+      // We'll calculate actual pixel paths in a resize-safe way via SVG coordinates
+      linksContainer.appendChild(link);
+
+      // Create Phase Node
+      const node = document.createElement('div');
+      node.className = 'mm-node phase';
+      node.style.left = `${x}%`;
+      node.style.top = `${y}%`;
+      node.style.transform = 'translate(-50%, -50%) scale(0)';
+      node.innerHTML = `
+        <i class="isax ${p.icon}"></i>
+        <span>${p.label}</span>
+        <div class="label">${p.title}</div>
+      `;
+      
+      node.addEventListener('click', () => showBentoDetails(p, plan));
+      nodesContainer.appendChild(node);
+      
+      p.el = node;
+      p.link = link;
+    });
+
+    // 3. Update Safety Notice
+    safetyText.innerText = plan.safety_notes || "Consult a professional practitioner for detailed dosage and contraindications.";
+    safetyNotice.style.display = 'flex';
+
+    // 4. Animate with Anime.js
+    anime({
+      targets: hubNode,
+      scale: [0, 1],
+      duration: 1000,
+      easing: 'easeOutElastic(1, .5)',
+      complete: () => {
+        // Animate links and phases
+        phases.forEach((p, i) => {
+          anime({
+            targets: p.el,
+            scale: [0, 1],
+            delay: i * 200,
+            duration: 800,
+            easing: 'easeOutBack'
+          });
+          
+          // SVG Path animation requires pixels, we'll use a simpler dash offset trick
+          // or just opacity for now as SVG percentages are tricky without ResizeObserver
+          p.link.style.opacity = 0;
+          anime({
+            targets: p.link,
+            opacity: [0, 1],
+            delay: i * 200,
+            duration: 1000
+          });
+        });
+      }
+    });
+
+    // Update SVG paths on render and window resize
+    const updatePaths = () => {
+      const rect = nodesContainer.getBoundingClientRect();
+      phases.forEach(p => {
+        const rad = (p.angle * Math.PI) / 180;
+        const x1 = rect.width * (centerX / 100);
+        const y1 = rect.height * (centerY / 100);
+        const x2 = rect.width * ((centerX + p.distance * Math.cos(rad)) / 100);
+        const y2 = rect.height * ((centerY + p.distance * Math.sin(rad)) / 100);
+        p.link.setAttribute("d", `M ${x1} ${y1} L ${x2} ${y2}`);
+      });
+    };
+    
+    updatePaths();
+    window.addEventListener('resize', updatePaths);
+
     roadmapResult.style.display = 'block';
     resultCard.style.display = 'none';
     responseContainer.classList.add('active');
   }
+
+  function showBentoDetails(phase, plan) {
+    const overlay = document.getElementById('bento-overlay');
+    const bentoGrid = document.getElementById('bento-grid');
+    
+    overlay.classList.add('active');
+    
+    bentoGrid.innerHTML = `
+      <div class="bento-card" style="grid-column: span 2;">
+        <h4><i class="isax isax-document-text"></i> Clinical Protocol: ${phase.label}</h4>
+        <p>${phase.data}</p>
+      </div>
+      <div class="bento-card">
+        <h4><i class="isax isax-reserve"></i> Herbal Support</h4>
+        <ul>
+          ${(plan.herbal_support || []).map(h => `<li>${h}</li>`).join('')}
+        </ul>
+      </div>
+      <div class="bento-card">
+        <h4><i class="isax isax-cup"></i> Dietary Regimen</h4>
+        <ul>
+          ${(plan.dietary_guidelines || []).map(d => `<li>${d}</li>`).join('')}
+        </ul>
+      </div>
+      <div class="bento-card">
+        <h4><i class="isax isax-activity"></i> Lifestyle & Yoga</h4>
+        <ul>
+          ${(plan.lifestyle_changes || []).map(l => `<li>${l}</li>`).join('')}
+        </ul>
+      </div>
+      <div class="bento-card">
+        <h4><i class="isax isax-shield-tick"></i> Safety Context</h4>
+        <p>${plan.safety_notes}</p>
+      </div>
+    `;
+
+    anime({
+      targets: '.bento-card',
+      translateY: [20, 0],
+      opacity: [0, 1],
+      delay: anime.stagger(100),
+      easing: 'easeOutQuad',
+      duration: 500
+    });
+  }
+
+  document.getElementById('close-bento').addEventListener('click', () => {
+    document.getElementById('bento-overlay').classList.remove('active');
+  });
 
   roadmapBtn.addEventListener('click', generateRoadmap);
 
