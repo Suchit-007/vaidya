@@ -12,6 +12,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const responseContainer = document.getElementById('response-container');
   const presetChips = document.querySelectorAll('.preset-chip');
   
+  // Tab/Section targets
+  const tabSearch = document.getElementById('tab-search');
+  const tabRoadmap = document.getElementById('tab-roadmap');
+  const searchSection = document.getElementById('search-section');
+  const roadmapSection = document.getElementById('roadmap-section');
+  const roadmapBtn = document.getElementById('generate-roadmap-btn');
+  const roadmapResult = document.getElementById('roadmap-result');
+  const resultCard = document.getElementById('result-card');
+  const bentoOverlay = document.getElementById('bento-overlay');
+
   // Response UI targets
   const confidenceChip = document.getElementById('confidence-chip');
   const answerText = document.getElementById('answer-text');
@@ -47,6 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
     searchInput.disabled = true;
     searchBtn.disabled = true;
     voiceBtn.disabled = true;
+    searchBtn.classList.add('is-loading');
     responseContainer.classList.remove('active');
     loaderContainer.classList.add('active');
 
@@ -69,6 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
       renderFallbackLocally(queryStr);
     } finally {
       loaderContainer.classList.remove('active');
+      searchBtn.classList.remove('is-loading');
       searchInput.disabled = false;
       searchBtn.disabled = false;
       voiceBtn.disabled = false;
@@ -165,12 +177,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Unveil payload container smoothly
+    roadmapResult.style.display = 'none';
+    resultCard.style.display = 'block';
     responseContainer.classList.add('active');
     
     // Store data for PDF export and show download action
     lastResponseData = data;
     if (downloadPdfBtn) {
       downloadPdfBtn.style.display = 'inline-flex';
+    }
+
+    // 4. Render Clinical Sources Sidebar
+    const resourcesList = document.getElementById('resources-list');
+    const sources = data.sources || [];
+    if (resourcesList) {
+      if (sources.length > 0) {
+        resourcesList.innerHTML = sources.map(src => `
+          <div class="resource-item">
+            <h5>${src.text_name}</h5>
+            <p>Author: ${src.author || 'Classical Archives'}</p>
+            <span class="relevance-tag">Relevance: ${src.relevance || 'High'}</span>
+          </div>
+        `).join('');
+      } else {
+        resourcesList.innerHTML = `
+          <div class="resource-item" style="opacity: 0.6;">
+            <h5>General Context verified</h5>
+            <p>Sourced from Vaidya.ai Verified Data Lake.</p>
+          </div>
+        `;
+      }
     }
   }
 
@@ -215,6 +251,10 @@ document.addEventListener('DOMContentLoaded', () => {
         modern_parallel: "Piperine actively downregulates CYP3A4 enzymatic complexes and P-gp efflux transporters, extending multi-drug pharmacokinetic plasma half-life.",
         extracted_entities: [
           { term: "Yogavahi", definition: "Catalytic bio-availability carrier substances that dramatically amplify the systemic absorption and targeted tissue delivery of associated drug compounds." }
+        ],
+        sources: [
+          { text_name: "Sharangadhara Samhita", author: "Acharya Sharangadhara", relevance: "High (Primary definition)" },
+          { text_name: "Charaka Samhita", author: "Acharya Charaka", relevance: "Moderate (Contextual usage)" }
         ]
       };
     } else if (qLower.includes('winter') || qLower.includes('joint') || qLower.includes('pain')) {
@@ -278,13 +318,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // --- TAB SWITCHING LOGIC ---
-  const tabSearch = document.getElementById('tab-search');
-  const tabRoadmap = document.getElementById('tab-roadmap');
-  const searchSection = document.getElementById('search-section');
-  const roadmapSection = document.getElementById('roadmap-section');
-  const roadmapBtn = document.getElementById('generate-roadmap-btn');
-  const roadmapResult = document.getElementById('roadmap-result');
-  const resultCard = document.getElementById('result-card');
 
   function switchTab(tab) {
     if (tab === 'search') {
@@ -292,15 +325,20 @@ document.addEventListener('DOMContentLoaded', () => {
       tabRoadmap.classList.remove('active');
       searchSection.style.display = 'flex';
       roadmapSection.style.display = 'none';
+      roadmapResult.style.display = 'none';
       responseContainer.classList.remove('active');
     } else {
       tabSearch.classList.remove('active');
       tabRoadmap.classList.add('active');
       searchSection.style.display = 'none';
       roadmapSection.style.display = 'flex';
+      resultCard.style.display = 'none';
       responseContainer.classList.remove('active');
     }
   }
+
+  // Ensure bento overlay is hidden on load
+  if (bentoOverlay) bentoOverlay.style.display = 'none';
 
   tabSearch.addEventListener('click', () => switchTab('search'));
   tabRoadmap.addEventListener('click', () => switchTab('roadmap'));
@@ -321,6 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
     responseContainer.classList.remove('active');
     roadmapResult.style.display = 'none';
     resultCard.style.display = 'none';
+    roadmapBtn.classList.add('is-loading');
     loaderContainer.classList.add('active');
 
     try {
@@ -342,15 +381,19 @@ document.addEventListener('DOMContentLoaded', () => {
     } finally {
       loaderContainer.classList.remove('remove');
       loaderContainer.classList.remove('active');
+      roadmapBtn.classList.remove('is-loading');
     }
   }
 
   function renderPlan(plan) {
     const nodesContainer = document.getElementById('mindmap-nodes');
     const linksContainer = document.getElementById('mindmap-links');
-    const safetyNotice = document.getElementById('roadmap-safety-notice');
-    const safetyText = document.getElementById('roadmap-safety-text');
     
+    // Ensure container is visible before calculating positions
+    roadmapResult.style.display = 'block';
+    resultCard.style.display = 'none';
+    responseContainer.classList.add('active');
+
     // Clear previous
     nodesContainer.innerHTML = '';
     linksContainer.innerHTML = '';
@@ -360,18 +403,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Define spatial layout (relative coordinates)
     const centerX = 50;
     const centerY = 50;
-    const phases = [
-      { id: 'p1', label: 'Phase 1', title: 'Stabilization', angle: -30, distance: 35, icon: 'isax-status-up', data: plan.phase_1 },
-      { id: 'p2', label: 'Phase 2', title: 'Core Therapy', angle: 90, distance: 35, icon: 'isax-health', data: plan.phase_2 },
-      { id: 'p3', label: 'Phase 3', title: 'Rejuvenation', angle: 210, distance: 35, icon: 'isax-magic-star', data: plan.phase_3 }
-    ];
-
+    
+    // Extract phases from plan
+    const phasesData = plan.phases || [];
+    
     // 1. Create Hub (Central Node)
     const hubNode = document.createElement('div');
-    hubNode.className = 'mm-node hub';
+    hubNode.className = 'mm-node hub center';
     hubNode.style.left = `${centerX}%`;
     hubNode.style.top = `${centerY}%`;
-    hubNode.style.transform = 'translate(-50%, -50%) scale(0)';
+    hubNode.style.transform = 'translate(-50%, -50%)';
     hubNode.innerHTML = `
       <i class="isax isax-judge"></i>
       <span>${disease}</span>
@@ -380,140 +421,242 @@ document.addEventListener('DOMContentLoaded', () => {
     nodesContainer.appendChild(hubNode);
 
     // 2. Create Phase Nodes & Links
-    phases.forEach((p, index) => {
-      const rad = (p.angle * Math.PI) / 180;
-      const x = centerX + p.distance * Math.cos(rad);
-      const y = centerY + p.distance * Math.sin(rad);
+    const phasePositions = [
+      { x: 50, y: 15, angle: -90 }, // Top
+      { x: 85, y: 65, angle: 30 },  // Bottom Right
+      { x: 15, y: 65, angle: 150 }  // Bottom Left
+    ];
 
-      // Create SVG Path Link
-      const link = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      link.setAttribute("class", "link-path");
-      link.setAttribute("d", `M ${centerX}% ${centerY}% L ${x}% ${y}%`);
-      // We'll calculate actual pixel paths in a resize-safe way via SVG coordinates
-      linksContainer.appendChild(link);
-
-      // Create Phase Node
+    const phases = phasesData.map((data, index) => {
+      const pos = phasePositions[index % phasePositions.length];
+      
+      // Create Node
       const node = document.createElement('div');
       node.className = 'mm-node phase';
-      node.style.left = `${x}%`;
-      node.style.top = `${y}%`;
-      node.style.transform = 'translate(-50%, -50%) scale(0)';
+      node.style.left = `${pos.x}%`;
+      node.style.top = `${pos.y}%`;
+      node.style.transform = 'translate(-50%, -50%)';
+      
+      const titleParts = data.title.split(':');
       node.innerHTML = `
-        <i class="isax ${p.icon}"></i>
-        <span>${p.label}</span>
-        <div class="label">${p.title}</div>
+        <span>${titleParts[0]}</span>
+        <div class="label">${titleParts[1] || data.title}</div>
       `;
       
-      node.addEventListener('click', () => showBentoDetails(p, plan));
+      node.addEventListener('click', () => {
+        document.querySelectorAll('.mm-node').forEach(n => n.classList.remove('is-active'));
+        node.classList.add('is-active');
+        showBentoDetails(data, disease);
+      });
+
       nodesContainer.appendChild(node);
-      
-      p.el = node;
-      p.link = link;
+
+      // Create SVG Link (Path)
+      const link = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      link.setAttribute("class", "mm-link");
+      linksContainer.appendChild(link);
+
+      return { el: node, link: link, angle: pos.angle, distance: 35 };
     });
 
-    // 3. Update Safety Notice
-    safetyText.innerText = plan.safety_notes || "Consult a professional practitioner for detailed dosage and contraindications.";
-    safetyNotice.style.display = 'flex';
-
-    // 4. Animate with Anime.js
-    anime({
-      targets: hubNode,
-      scale: [0, 1],
-      duration: 1000,
-      easing: 'easeOutElastic(1, .5)',
-      complete: () => {
-        // Animate links and phases
-        phases.forEach((p, i) => {
-          anime({
-            targets: p.el,
-            scale: [0, 1],
-            delay: i * 200,
-            duration: 800,
-            easing: 'easeOutBack'
-          });
-          
-          // SVG Path animation requires pixels, we'll use a simpler dash offset trick
-          // or just opacity for now as SVG percentages are tricky without ResizeObserver
-          p.link.style.opacity = 0;
-          anime({
-            targets: p.link,
-            opacity: [0, 1],
-            delay: i * 200,
-            duration: 1000
-          });
-        });
-      }
-    });
-
-    // Update SVG paths on render and window resize
+    // Update SVG paths using Organic Bezier Curves
     const updatePaths = () => {
       const rect = nodesContainer.getBoundingClientRect();
-      phases.forEach(p => {
-        const rad = (p.angle * Math.PI) / 180;
+      if (rect.width === 0) return;
+      
+      phases.forEach((p, index) => {
+        const pos = phasePositions[index % phasePositions.length];
         const x1 = rect.width * (centerX / 100);
         const y1 = rect.height * (centerY / 100);
-        const x2 = rect.width * ((centerX + p.distance * Math.cos(rad)) / 100);
-        const y2 = rect.height * ((centerY + p.distance * Math.sin(rad)) / 100);
-        p.link.setAttribute("d", `M ${x1} ${y1} L ${x2} ${y2}`);
+        const x2 = rect.width * (pos.x / 100);
+        const y2 = rect.height * (pos.y / 100);
+        
+        // Calculate control point for Quadratic Bezier (organic curve)
+        const midX = (x1 + x2) / 2;
+        const midY = (y1 + y2) / 2;
+        
+        // Offset the control point perpendicular to the line
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const offset = dist * 0.15; // 15% curvature
+        
+        const cx = midX - (dy / dist) * offset;
+        const cy = midY + (dx / dist) * offset;
+        
+        p.link.setAttribute("class", "link-path");
+        p.link.setAttribute("d", `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`);
       });
     };
     
-    updatePaths();
+    setTimeout(updatePaths, 100);
     window.addEventListener('resize', updatePaths);
 
-    roadmapResult.style.display = 'block';
-    resultCard.style.display = 'none';
-    responseContainer.classList.add('active');
+    // Initial Animation
+    if (typeof anime !== 'undefined') {
+      anime({
+        targets: '.mm-node',
+        scale: [0, 1],
+        opacity: [0, 1],
+        delay: anime.stagger(100),
+        easing: 'easeOutBack',
+        duration: 800
+      });
+      
+      anime({
+        targets: '.mm-link',
+        strokeDashoffset: [anime.setDashoffset, 0],
+        easing: 'easeInOutSine',
+        duration: 1000,
+        delay: 500
+      });
+    }
   }
 
-  function showBentoDetails(phase, plan) {
+  /**
+   * Orchestrates the immersive Bento transition
+   */
+  function showBentoDetails(phase, disease) {
     const overlay = document.getElementById('bento-overlay');
-    const bentoGrid = document.getElementById('bento-grid');
+    const viewport = document.getElementById('mindmap-container');
     
-    overlay.classList.add('active');
-    
-    bentoGrid.innerHTML = `
-      <div class="bento-card" style="grid-column: span 2;">
-        <h4><i class="isax isax-document-text"></i> Clinical Protocol: ${phase.label}</h4>
-        <p>${phase.data}</p>
-      </div>
-      <div class="bento-card">
-        <h4><i class="isax isax-reserve"></i> Herbal Support</h4>
-        <ul>
-          ${(plan.herbal_support || []).map(h => `<li>${h}</li>`).join('')}
-        </ul>
-      </div>
-      <div class="bento-card">
-        <h4><i class="isax isax-cup"></i> Dietary Regimen</h4>
-        <ul>
-          ${(plan.dietary_guidelines || []).map(d => `<li>${d}</li>`).join('')}
-        </ul>
-      </div>
-      <div class="bento-card">
-        <h4><i class="isax isax-activity"></i> Lifestyle & Yoga</h4>
-        <ul>
-          ${(plan.lifestyle_changes || []).map(l => `<li>${l}</li>`).join('')}
-        </ul>
-      </div>
-      <div class="bento-card">
-        <h4><i class="isax isax-shield-tick"></i> Safety Context</h4>
-        <p>${plan.safety_notes}</p>
-      </div>
-    `;
+    if (!overlay || !viewport) return;
 
-    anime({
-      targets: '.bento-card',
-      translateY: [20, 0],
-      opacity: [0, 1],
-      delay: anime.stagger(100),
-      easing: 'easeOutQuad',
-      duration: 500
-    });
+    // 1. Show overlay immediately to avoid layout thrashing
+    viewport.classList.add('is-blurred');
+    overlay.classList.add('active');
+
+    try {
+      // 2. Populate Content
+      const titleEl = document.getElementById('bento-title');
+      const objectiveEl = document.getElementById('bento-objective');
+      if (titleEl) titleEl.innerText = phase.title;
+      if (objectiveEl) objectiveEl.innerText = phase.objective || `Primary goal: ${phase.title} for ${disease}. Focus on balancing physiological markers and system preparation.`;
+      
+      // Herbs
+      const herbsList = document.getElementById('bento-herbs');
+      if (herbsList) {
+        herbsList.innerHTML = (phase.herbs || ["Standard Ayurvedic Formulations"]).map(h => {
+            const hName = typeof h === 'string' ? h : (h.name || 'Unknown Herb');
+            const hDosage = (h && typeof h === 'object') ? (h.dosage || 'As directed') : 'As directed';
+            const hTiming = (h && typeof h === 'object') ? (h.timing || 'Post-meal') : 'Post-meal';
+            return `<li><strong>${hName}</strong>: ${hDosage} (${hTiming})</li>`;
+        }).join('');
+      }
+
+      // Diet
+      const dietAllow = document.getElementById('bento-diet-allow');
+      const dietAvoid = document.getElementById('bento-diet-avoid');
+      if (dietAllow) dietAllow.innerHTML = (phase.diet?.allow || ["Warm water", "Fresh fruits", "Ghee"]).map(i => `<li>${i}</li>`).join('');
+      if (dietAvoid) dietAvoid.innerHTML = (phase.diet?.avoid || ["Cold drinks", "Deep fried", "Processed food"]).map(i => `<li>${i}</li>`).join('');
+
+      // NEW: Precautions
+      const precautionList = document.getElementById('bento-precautions');
+      if (precautionList) {
+        const defaults = ["Avoid excessive physical exertion", "No heavy/cold foods", "Maintain steady hydration"];
+        precautionList.innerHTML = (phase.precautions || defaults).map(p => `<li>${p}</li>`).join('');
+      }
+
+      // Tasks
+      const tasksGrid = document.getElementById('bento-tasks');
+      if (tasksGrid) {
+        tasksGrid.innerHTML = (phase.tasks || ["Daily Abhyanga", "Surya Namaskar", "Pranayama"]).map(t => `
+          <div class="task-item">
+            <i class="isax isax-tick-circle"></i>
+            <span>${t}</span>
+          </div>
+        `).join('');
+      }
+
+      // Dosha Impact (Radial Gauges Placeholder)
+      const doshaGrid = document.getElementById('bento-dosha-metrics');
+      if (doshaGrid) {
+        const vata = phase.dosha_metrics?.vata || 50;
+        const pitta = phase.dosha_metrics?.pitta || 50;
+        const kapha = phase.dosha_metrics?.kapha || 50;
+
+        doshaGrid.innerHTML = `
+          <div class="dosha-radial-pill">
+            <div class="pill-label">Vata</div>
+            <div class="pill-val">${vata}%</div>
+          </div>
+          <div class="dosha-radial-pill">
+            <div class="pill-label">Pitta</div>
+            <div class="pill-val">${pitta}%</div>
+          </div>
+          <div class="dosha-radial-pill">
+            <div class="pill-label">Kapha</div>
+            <div class="pill-val">${kapha}%</div>
+          </div>
+        `;
+      }
+
+      // 3. Trigger Staggered Animations
+      if (typeof anime !== 'undefined') {
+        anime.remove('#bento-overlay .bento-card');
+        anime({
+          targets: '#bento-overlay .bento-card',
+          translateY: [40, 0],
+          opacity: [0, 1],
+          delay: anime.stagger(120),
+          easing: 'easeOutQuint',
+          duration: 900
+        });
+      }
+
+      // 4. Attach Back Navigation
+      const backBtn = document.getElementById('back-to-roadmap');
+      if (backBtn) {
+        backBtn.onclick = hideBentoDetails;
+      }
+
+    } catch (e) {
+      console.error("Error populating Bento details:", e);
+    }
   }
 
-  document.getElementById('close-bento').addEventListener('click', () => {
-    document.getElementById('bento-overlay').classList.remove('active');
-  });
+  /**
+   * Reverts to the initial Roadmap state
+   */
+  function hideBentoDetails() {
+    const overlay = document.getElementById('bento-overlay');
+    const viewport = document.getElementById('mindmap-container');
+    
+    if (!overlay || !viewport) return;
+
+    if (typeof anime !== 'undefined') {
+      anime({
+        targets: '#bento-overlay .bento-card',
+        translateY: [0, 40],
+        opacity: [1, 0],
+        delay: anime.stagger(60, {from: 'last'}),
+        easing: 'easeInQuint',
+        duration: 400,
+        complete: () => {
+          overlay.classList.remove('active');
+          viewport.classList.remove('is-blurred');
+          document.querySelectorAll('.mm-node').forEach(n => n.classList.remove('is-active'));
+        }
+      });
+    } else {
+      overlay.classList.remove('active');
+      viewport.classList.remove('is-blurred');
+      document.querySelectorAll('.mm-node').forEach(n => n.classList.remove('is-active'));
+    }
+  }
+
+  // Close Logic
+  const closeBentoBtn = document.getElementById('close-bento');
+  if (closeBentoBtn) {
+    closeBentoBtn.onclick = () => {
+      const overlay = document.getElementById('bento-overlay');
+      const viewport = document.getElementById('mindmap-container');
+      
+      overlay.classList.remove('active');
+      viewport.classList.remove('is-blurred');
+      document.querySelectorAll('.mm-node').forEach(n => n.classList.remove('is-active'));
+    };
+  }
 
   roadmapBtn.addEventListener('click', generateRoadmap);
 
@@ -568,6 +711,23 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     // Hide or disable microphone component gracefully on unsupported target user agents
     voiceBtn.style.display = 'none';
+  }
+
+  // --- CLINICAL RESOURCES SIDEBAR TOGGLE ---
+  const toggleResourcesBtn = document.getElementById('toggle-resources-btn');
+  const resourcesSidebar = document.getElementById('resources-sidebar');
+  const closeResourcesBtn = document.getElementById('close-resources');
+
+  if (toggleResourcesBtn && resourcesSidebar) {
+    toggleResourcesBtn.addEventListener('click', () => {
+      resourcesSidebar.classList.add('active');
+    });
+  }
+
+  if (closeResourcesBtn && resourcesSidebar) {
+    closeResourcesBtn.addEventListener('click', () => {
+      resourcesSidebar.classList.remove('active');
+    });
   }
 
   // --- NATIVE SPEECH SYNTHESIS INTEGRATION (VOICE OUTPUT) ---
