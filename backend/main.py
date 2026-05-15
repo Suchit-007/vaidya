@@ -55,6 +55,21 @@ class QueryResponse(BaseModel):
     modern_parallel: str
     extracted_entities: List[Dict[str, str]]
 
+class RoadmapRequest(BaseModel):
+    disease: str
+    dosha: str
+    age: str
+    severity: str
+
+class RoadmapResponse(BaseModel):
+    phase_1: str
+    phase_2: str
+    phase_3: str
+    herbal_support: List[str]
+    dietary_guidelines: List[str]
+    lifestyle_changes: List[str]
+    safety_notes: str
+
 # Pre-cached Verified Demo Responses to guarantee 100% Hackathon Pitch execution safety
 FALLBACK_CACHE = {
     "winter": {
@@ -221,6 +236,87 @@ Schema:
         print(f"API Completion interception triggered: {e}. Falling back to flawless pre-cached engine suite.")
         cached = get_pre_cached_fallback(query_str)
         return QueryResponse(**cached)
+
+@app.post("/api/roadmap", response_model=RoadmapResponse)
+async def handle_roadmap(request: RoadmapRequest):
+    """Generates a personalized treatment roadmap using RAG chunks and LLM synthesis."""
+    disease = request.disease.strip()
+    
+    # 1. Retrieve clinical context for the disease
+    retrieval = rag_engine.query(disease, top_k=4)
+    context_blocks = "\n\n".join([f"Source [{c['title']}]: {c['text']}" for c in retrieval["top_chunks"]])
+
+    # 2. Construct specialized roadmap prompt
+    system_prompt = f"""You are an elite Ayurvedic Physician and Clinical Strategist.
+Your goal is to generate a highly personalized 3-phase treatment roadmap based on classical archives.
+
+Inputs:
+- Condition: {disease}
+- Dosha Focus: {request.dosha}
+- Severity: {request.severity}
+- Age Group: {request.age}
+
+Classical Reference Context:
+{context_blocks}
+
+CRITICAL INSTRUCTION: You MUST return your response ONLY as a strictly valid JSON object matching the exact keys below. Do not wrap in markdown code blocks.
+The plan must be clinically sound, specific to the dosha, and respectful of the severity level.
+
+Schema:
+{{
+  "phase_1": "Description of initial stabilization phase (1-2 weeks).",
+  "phase_2": "Description of core treatment and purification phase (2-4 weeks).",
+  "phase_3": "Description of rejuvenation and maintenance phase (Long term).",
+  "herbal_support": ["List of 3-4 classical herbs or formulations"],
+  "dietary_guidelines": ["List of 3-4 specific dietary instructions"],
+  "lifestyle_changes": ["List of 3-4 specific lifestyle or yoga recommendations"],
+  "safety_notes": "Clinical precautions or signs to watch for."
+}}"""
+
+    # 3. Call LLM for synthesis
+    if not client:
+        # Static demo fallback if API key is missing
+        return RoadmapResponse(
+            phase_1=f"Initial pacification of {request.dosha} dosha through warm fomentation and light diet.",
+            phase_2=f"Intensive herbal support focusing on {disease} management protocols.",
+            phase_3="Rasayana rejuvenation to restore systemic Ojas and prevent recurrence.",
+            herbal_support=["Ashwagandha (Withania somnifera)", "Triphala Churna", "Guduchi (Tinospora cordifolia)"],
+            dietary_guidelines=["Favor warm, freshly cooked meals", "Avoid cold, processed, or heavy foods", "Incorporate Ginger and Cumin for digestion"],
+            lifestyle_changes=["Pranayama (Deep Breathing)", "Abhyanga (Warm Oil Massage)", "Maintain consistent circadian sleep cycles"],
+            safety_notes="Consult a Vaidya immediately if symptoms persist or acute discomfort occurs."
+        )
+
+    try:
+        response = client.chat.completions.create(
+            model=LLM_MODEL,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Generate a roadmap for {disease}."}
+            ],
+            temperature=0.2, # Slight creativity allowed for personalization
+            max_tokens=800
+        )
+        
+        raw_output = response.choices[0].message.content.strip()
+        if raw_output.startswith("```json"):
+            raw_output = raw_output[7:]
+        if raw_output.endswith("```"):
+            raw_output = raw_output[:-3]
+        
+        parsed_json = json.loads(raw_output.strip())
+        return RoadmapResponse(**parsed_json)
+
+    except Exception as e:
+        print(f"Roadmap synthesis failed: {e}. Returning safety-first fallback.")
+        return RoadmapResponse(
+            phase_1="Focus on immediate Agni (digestive fire) stabilization.",
+            phase_2="Systematic purification and tissue-specific herbal support.",
+            phase_3="Rejuvenative (Rasayana) protocols for long-term resilience.",
+            herbal_support=["Standard classical formulations based on presenting symptoms"],
+            dietary_guidelines=["Light, easily digestible, warm (Sattvic) foods"],
+            lifestyle_changes=["Regular movement, meditation, and stress reduction"],
+            safety_notes="Please consult a professional practitioner for detailed dosage and contraindications."
+        )
 
 @app.post("/api/export-pdf")
 async def export_analysis_pdf(data: dict):

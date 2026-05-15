@@ -277,6 +277,143 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter') executeQuery(searchInput.value);
   });
 
+  // --- TAB SWITCHING LOGIC ---
+  const tabSearch = document.getElementById('tab-search');
+  const tabRoadmap = document.getElementById('tab-roadmap');
+  const searchSection = document.getElementById('search-section');
+  const roadmapSection = document.getElementById('roadmap-section');
+  const roadmapBtn = document.getElementById('generate-roadmap-btn');
+  const roadmapResult = document.getElementById('roadmap-result');
+  const resultCard = document.getElementById('result-card');
+
+  function switchTab(tab) {
+    if (tab === 'search') {
+      tabSearch.classList.add('active');
+      tabRoadmap.classList.remove('active');
+      searchSection.style.display = 'flex';
+      roadmapSection.style.display = 'none';
+      responseContainer.classList.remove('active');
+    } else {
+      tabSearch.classList.remove('active');
+      tabRoadmap.classList.add('active');
+      searchSection.style.display = 'none';
+      roadmapSection.style.display = 'flex';
+      responseContainer.classList.remove('active');
+    }
+  }
+
+  tabSearch.addEventListener('click', () => switchTab('search'));
+  tabRoadmap.addEventListener('click', () => switchTab('roadmap'));
+
+  // --- ROADMAP GENERATION LOGIC ---
+  async function generateRoadmap() {
+    const disease = document.getElementById('diseaseInput').value.trim();
+    const dosha = document.getElementById('doshaSelect').value;
+    const age = document.getElementById('ageSelect').value;
+    const severity = document.getElementById('severitySelect').value;
+
+    if (!disease) {
+      alert("Please specify a condition or disease.");
+      return;
+    }
+
+    // Update UI states
+    responseContainer.classList.remove('active');
+    roadmapResult.style.display = 'none';
+    resultCard.style.display = 'none';
+    loaderContainer.classList.add('active');
+
+    try {
+      const response = await fetch(`${API_BASE}/api/roadmap`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ disease, dosha, age, severity })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned HTTP status ${response.status}`);
+      }
+
+      const plan = await response.json();
+      renderPlan(plan);
+    } catch (error) {
+      console.error('Roadmap generation error:', error);
+      alert("Failed to generate roadmap. Please check your connection.");
+    } finally {
+      loaderContainer.classList.remove('remove');
+      loaderContainer.classList.remove('active');
+    }
+  }
+
+  function renderPlan(plan) {
+    const roadmapContent = document.getElementById('roadmap-content');
+    
+    // Construct premium timeline and grid layout
+    let html = `
+      <div class="roadmap-timeline">
+        <div class="milestone-item">
+          <div class="milestone-dot"><svg width="10" height="10" viewBox="0 0 24 24" fill="var(--accent-gold)"><circle cx="12" cy="12" r="10"/></svg></div>
+          <div class="milestone-content">
+            <h4>Phase 1: Initial Stabilization</h4>
+            <p>${plan.phase_1 || "Focus on pacifying immediate aggravation and clearing metabolic waste (Ama)."}</p>
+          </div>
+        </div>
+        <div class="milestone-item">
+          <div class="milestone-dot"><svg width="10" height="10" viewBox="0 0 24 24" fill="var(--accent-gold)"><circle cx="12" cy="12" r="10"/></svg></div>
+          <div class="milestone-content">
+            <h4>Phase 2: Core Therapy</h4>
+            <p>${plan.phase_2 || "Targeted herbal support and lifestyle modifications for root-cause correction."}</p>
+          </div>
+        </div>
+        <div class="milestone-item">
+          <div class="milestone-dot"><svg width="10" height="10" viewBox="0 0 24 24" fill="var(--accent-gold)"><circle cx="12" cy="12" r="10"/></svg></div>
+          <div class="milestone-content">
+            <h4>Phase 3: Rejuvenation</h4>
+            <p>${plan.phase_3 || "Rasayana therapy to strengthen immunity and prevent recurrence."}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="roadmap-grid">
+        <div class="roadmap-section-card">
+          <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Herbal Support</h4>
+          <ul>
+            ${(plan.herbal_support || ["Botanical extracts as per classical archives"]).map(h => `<li>${h}</li>`).join('')}
+          </ul>
+        </div>
+        <div class="roadmap-section-card">
+          <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg> Dietary Regimen</h4>
+          <ul>
+            ${(plan.dietary_guidelines || ["Pathya (favorable) diet following Ritucharya"]).map(d => `<li>${d}</li>`).join('')}
+          </ul>
+        </div>
+        <div class="roadmap-section-card">
+          <h4><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg> Lifestyle & Yoga</h4>
+          <ul>
+            ${(plan.lifestyle_changes || ["Vihara (lifestyle) adjustments for circadian balance"]).map(l => `<li>${l}</li>`).join('')}
+          </ul>
+        </div>
+      </div>
+
+      <div class="parallel-box" style="margin-top: 1.5rem; border-color: rgba(239, 68, 68, 0.2);">
+        <div class="parallel-icon" style="color: var(--accent-red);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="parallel-content">
+          <h4 style="color: var(--accent-red);">Clinical Safety Notice</h4>
+          <p>${plan.safety_notes || "This roadmap is synthesized for educational insight. Professional clinical evaluation is mandatory before starting any therapy."}</p>
+        </div>
+      </div>
+    `;
+
+    roadmapContent.innerHTML = html;
+    roadmapResult.style.display = 'block';
+    resultCard.style.display = 'none';
+    responseContainer.classList.add('active');
+  }
+
+  roadmapBtn.addEventListener('click', generateRoadmap);
+
   // Preset quick-click mappings
   presetChips.forEach(chip => {
     chip.addEventListener('click', () => {
