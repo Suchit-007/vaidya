@@ -2,7 +2,7 @@ import os
 import json
 import re
 from typing import Optional, List, Dict, Any
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -331,6 +331,26 @@ async def export_analysis_pdf(data: dict):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
+
+# WebSocket endpoint for multi-agent trace streaming
+@app.websocket("/ws/trace/{query_id}")
+async def websocket_trace_endpoint(websocket: WebSocket, query_id: str):
+    await websocket.accept()
+    try:
+        while True:
+            data = await websocket.receive_json()
+            if data.get("action") == "start":
+                # Simulate the trace from the multi-agent engine
+                # In Task 2 we will connect this to the real langgraph app
+                await websocket.send_json({
+                    "trace": [
+                        {"agent": "Scholar", "action": "Analyzing scriptural alignment"},
+                        {"agent": "Pharmacologist", "action": "Verifying modern clinical parallels"},
+                        {"agent": "SafetyOfficer", "action": "Final safety gate verification"}
+                    ]
+                })
+    except WebSocketDisconnect:
+        print(f"Client #{query_id} disconnected")
 
 # Mount premium frontend app static serving at root directory path
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
