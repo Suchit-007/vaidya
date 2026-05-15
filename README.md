@@ -1,145 +1,257 @@
-# Vaidya.ai: Intelligent Q&A Assistant for Ayurveda Knowledge
+# Vaidya.ai
 
-**AI Fusion Challenge Hackathon — Problem Statement 2 Submission**  
-**Prototype Track**: Web Application Prototype  
-**Design System**: "Sanskrit Premium" Glassmorphism UI  
+Source-grounded Ayurveda Q&A with inspectable answers, confidence signals, and phased roadmap support.
 
----
+[Live Demo](https://vaidya-pi.vercel.app/) | [Screenshots](#product-screenshots) | [Local Setup](#local-setup) | [Deployment](#deployment)
 
-## 1. Project Title and Problem Statement
+Vaidya.ai is a web prototype for asking questions against curated Ayurveda reference material. It pairs a FastAPI retrieval backend with a polished static frontend so users can ask focused questions, inspect the supporting source context, and generate structured roadmap-style guidance.
 
-**Project Title**: Vaidya.ai: Building an Intelligent Q&A Assistant for Ayurveda Knowledge  
+This project is intended for educational and prototype review. It does not provide medical diagnosis or replace a qualified practitioner.
 
-**Problem Overview**:  
-Ayurveda encompasses a vast body of traditional medical wisdom spanning scriptures, classical books, and botanical research documents. However, this foundational knowledge is often unstructured, highly fragmented, difficult to query, and inaccessible via modern semantic searches. Furthermore, generic Large Language Models frequently hallucinate classical definitions or provide unverified remedies when asked specialized health questions.
+## Why It Exists
 
-**The Challenge & Solution**:  
-Our submission designs and implements an advanced AI-powered assistant capable of:
-1. **Ingesting classical text blocks** directly from authentic sources (specifically referencing chapters from the *Charaka Samhita*).
-2. **Understanding deep contextual attributes** using a dual-layered Hybrid Retrieval Engine.
-3. **Answering natural language queries** while adhering strictly to a **zero-hallucination constraint**—synthesizing responses strictly from provided source texts **without relying on external internet lookups**.
+Ayurveda knowledge is spread across classical texts, curriculum notes, and clinical reference material. That makes it hard to search, compare, and audit. Generic chatbots can also produce unsupported answers when domain context is missing.
 
----
+Vaidya.ai takes a stricter approach:
 
-## 2. Solution Overview & Key Differentiators
+- Search local reference material before answering.
+- Show confidence and corroboration signals.
+- Pin source context beside the generated response.
+- Highlight important Sanskrit and clinical terms.
+- Keep roadmap guidance structured and reviewable.
 
-Vaidya.ai operates as an absolute domain-specific RAG (Retrieval-Augmented Generation) prototype ensuring utmost clinical safety and authentic verification.
+## Core Workflows
 
-### Core Features & Visual Excellence:
-- **Confidence-Tiered Responses**: Automated calculation of high/moderate/low corroboration scores scaling from local distance vector thresholds.
-- **Verbatim Source Pins**: Pinning the exact extracted classical reference text snippet directly under the summary so practitioners can independently audit answers.
-- **Modern Clinical Parallels**: Translating ancient bio-energetic concepts into equivalent modern biomolecular or homeostatic correlations.
-- **Interactive Sanskrit Entity Highlighting**: Automated continuous detection of foundational entities (*Vata*, *Pitta*, *Kapha*, *Haridra*, *Sattva*) to provide inline floating definition drawers.
-- **Native Web Speech Integrations**: Voice input querying via microphone and native audio voice synthesis reading verified answers aloud.
+### Ask the Texts
 
----
+Ask a question about a concept, herb, symptom pattern, or care principle. The app returns a source-grounded answer with confidence tier, extracted entities, source context, and a modern interpretation.
+
+### Build a Roadmap
+
+Enter a condition or focus area, select a dosha lens, severity, and age group, then generate a three-phase roadmap. Each phase opens into bento-style detail cards covering objective, herbs, food guidance, dosha impact, safety boundaries, and lifestyle tasks.
+
+### Export and Review
+
+For supported answer views, the app can generate a PDF-style clinical analysis report for easier review and sharing.
+
+## Key Features
+
+- **Hybrid retrieval engine** - Uses local text ingestion and vector-style matching over curated Ayurveda references.
+- **Confidence-tiered responses** - Surfaces high, moderate, or low confidence based on retrieved corroboration.
+- **Source context pins** - Keeps the supporting passage visible so users can audit the response.
+- **Sanskrit entity highlights** - Detects terms such as Vata, Pitta, Kapha, Haridra, and Sattva with inline definitions.
+- **Roadmap timeline** - Converts a condition and dosha lens into a readable phased plan.
+- **Bento phase details** - Splits each phase into compact cards for objective, herbs, food, safety, and daily practices.
+- **Voice controls** - Uses browser speech APIs for voice input and text-to-speech where supported.
+- **Vercel-ready deployment** - Includes `vercel.json`, `requirements.txt`, and `.vercelignore`.
 
 ## Product Screenshots
 
 ### Source-Grounded Search
+
 ![Vaidya.ai source-grounded search interface](docs/assets/screenshots/01-home-search.png)
 
 Ask a focused Ayurveda question and review the generated answer beside confidence, source context, terminology highlights, and modern interpretation.
 
 ### Roadmap Timeline
+
 ![Vaidya.ai phased roadmap timeline](docs/assets/screenshots/02-roadmap-timeline.png)
 
 Convert a condition and dosha lens into a staged roadmap with objective, herb support, food guidance, and safety previews for each phase.
 
 ### Roadmap Deep-Dive
+
 ![Vaidya.ai roadmap bento detail cards](docs/assets/screenshots/03-roadmap-bento-detail.png)
 
 Open any roadmap phase into bento-style clinical cards that separate objectives, dosha impact, herbs, diet, safeguards, and daily practices.
 
 ### Mobile Layout
+
 ![Vaidya.ai mobile homepage layout](docs/assets/screenshots/04-mobile-home.png)
 
 Use the same source-grounded search and roadmap workflow on smaller screens with stacked controls and readable touch spacing.
 
----
+## Tech Stack
 
-## 3. Technical Architecture
+- **Backend:** FastAPI, Pydantic, Uvicorn
+- **Retrieval:** Local text corpus, NumPy, TF-IDF-style scoring
+- **LLM client:** OpenAI-compatible client, configured for OpenRouter by default
+- **Frontend:** Vanilla HTML, CSS, JavaScript
+- **Reports:** ReportLab PDF generation
+- **Deployment:** Vercel Python serverless routing
 
+## Architecture
+
+```txt
+User question or roadmap request
+        |
+        v
+FastAPI endpoint
+        |
+        v
+Local retrieval over curated Ayurveda data
+        |
+        v
+Confidence tier + source context selection
+        |
+        v
+Fallback response or OpenAI-compatible JSON synthesis
+        |
+        v
+Static frontend renders answer, citations, roadmap, and bento cards
 ```
-┌────────────────────────────────────────────────────────┐
-│                   USER SEARCH QUERY                    │
-└───────────────────────────┬────────────────────────────┘
-                            ▼
-┌────────────────────────────────────────────────────────┐
-│             HYBRID RETRIEVAL SEARCH ENGINE             │
-│  Dense Vector Similarity Matrix + Sparse BM25 Overlap  │
-└───────────────────────────┬────────────────────────────┘
-                            ▼
-┌────────────────────────────────────────────────────────┐
-│            DYNAMIC CONFIDENCE TIER SCORING             │
-│  Corroboration Factor Verification (High/Moderate/Low) │
-└───────────────────────────┬────────────────────────────┘
-                            ▼
-┌────────────────────────────────────────────────────────┐
-│           STRICT SCHEMA VALIDATION & ROUTING           │
-│   Pre-cached Offline Bounds or LLM JSON Synthesis      │
-└───────────────────────────┬────────────────────────────┘
-                            ▼
-┌────────────────────────────────────────────────────────┐
-│           GLASSMORPHIC PREMIUM WEB INTERFACE           │
-│   Vanilla JS Fetch Layer + Native Speech APIs (TTS)    │
-└────────────────────────────────────────────────────────┘
+
+The frontend is served from `frontend/` by the FastAPI app mounted at `/`. API routes such as `/api/query`, `/api/roadmap`, and `/api/export-pdf` are handled before the static frontend fallback.
+
+## Project Structure
+
+```txt
+backend/
+  main.py            FastAPI app, API routes, frontend mount
+  rag_engine.py      Local retrieval and entity extraction
+  pdf_generator.py   PDF report generation
+
+frontend/
+  index.html         Main web UI
+  app.js             Query, roadmap, bento, voice, and UI logic
+  styles.css         Sanskrit Premium visual system
+
+data/
+  *.txt              Curated local reference corpus
+
+docs/assets/screenshots/
+  *.png              README product screenshots
 ```
 
-### Data Processing & Pipeline Flow:
-1. **Ingestion Layer**: Custom chunking splitting domain files into localized 500-token semantic blocks with 50-token overlapping borders.
-2. **Hybrid Vector Store**: Inline computation of normalized Term Frequency-Inverse Document Frequency (TF-IDF) float matrices optimized for real-time offline CPU matching, paired seamlessly with standard float vector models.
-3. **API Bridge**: Asynchronous Python FastAPI backend exposing aggressive cross-origin routes alongside static front-end mounting.
+## Local Setup
 
----
+### 1. Clone the repo
 
-## 4. APIs & Libraries Used
-
-- **FastAPI & Uvicorn**: High-performance asynchronous API web framework serving endpoints and static web routing.
-- **OpenAI Client API / OpenRouter Integration**: Used for remote completion parsing under `temperature=0.0` enforcement bounds.
-- **Numpy**: Vector operations, cosine similarity array math, and high-speed ranking indices.
-- **Pydantic**: Data model serialization and request payload typing.
-- **Native Browser APIs**: `window.SpeechRecognition` (Voice-to-Text) and `window.speechSynthesis` (Text-to-Speech) modules.
-
----
-
-## 5. Steps to Run & Test the Application Locally
-
-### Prerequisites:
-Ensure you have **Python 3.10+** installed on your target machine.
-
-### Installation Instructions:
-1. Clone the repository repository locally:
-   ```bash
-   git clone https://github.com/your-username/aivaidya.git
-   cd aivaidya
-   ```
-2. Verify local dependency presence or install core packages:
-   ```bash
-   pip install fastapi uvicorn pydantic numpy python-dotenv openai
-   ```
-3. Set up configuration variables:
-   Ensure your `.env` file exists at the root path containing:
-   ```env
-   OPENAI_API_KEY=sk-or-v1-your-key-here
-   OPENAI_BASE_URL=https://openrouter.ai/api/v1
-   LLM_MODEL=openai/gpt-4o-mini
-   ```
-
-### Running the Application Engine:
-Execute the unified backend and frontend runner natively using Uvicorn:
 ```bash
-uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+git clone https://github.com/Suchit-007/vaidya.git
+cd vaidya
 ```
 
-### Accessing the Web Interface:
-Open your preferred web browser and navigate directly to:
-**`http://localhost:8000`**
+### 2. Create and activate a virtual environment
 
----
+```bash
+python -m venv .venv
+```
 
-## 6. Future Scope
+Windows PowerShell:
 
-- **Multi-Lingual Indic Parsing**: Integrating automated offline translation models to ingest Sanskrit/Devanagari scripts directly and output answers in native local dialects (Kannada, Hindi, Tamil).
-- **Botanical Computer Vision Integration**: Adding camera-based image upload feature allowing users to capture physical medicinal herbs and match visual features directly against classical Dravya Guna catalogs.
-- **Air-Gapped Embedded Mobile Deployment**: Packaging the optimized offline TF-IDF vector matrices inside native mobile bundles (React Native / Flutter) to allow complete air-gapped field querying for remote healthcare practitioners.
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+macOS/Linux:
+
+```bash
+source .venv/bin/activate
+```
+
+### 3. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Configure environment variables
+
+Create a local `.env` file in the repo root:
+
+```env
+OPENAI_API_KEY=your_key_here
+OPENAI_BASE_URL=https://openrouter.ai/api/v1
+LLM_MODEL=openai/gpt-4o-mini
+```
+
+For fully local demo fallback behavior, you can also set:
+
+```env
+FORCE_FALLBACK=true
+```
+
+### 5. Run the app
+
+```bash
+uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+Open:
+
+```txt
+http://127.0.0.1:8000
+```
+
+## API Endpoints
+
+### `POST /api/query`
+
+Returns a source-grounded answer for a user question.
+
+```json
+{
+  "query": "How does Haridra act in tissue repair?"
+}
+```
+
+### `POST /api/roadmap`
+
+Returns a three-phase roadmap for a condition or focus area.
+
+```json
+{
+  "disease": "Joint Pain",
+  "dosha": "Vata",
+  "age": "Adult",
+  "severity": "Moderate"
+}
+```
+
+### `POST /api/export-pdf`
+
+Generates a PDF report from an existing analysis payload.
+
+## Deployment
+
+The app is configured for Vercel through:
+
+- `vercel.json`
+- `requirements.txt`
+- `.vercelignore`
+
+Required Vercel environment variables:
+
+```env
+OPENAI_API_KEY=your_key_here
+OPENAI_BASE_URL=https://openrouter.ai/api/v1
+LLM_MODEL=openai/gpt-4o-mini
+```
+
+Recommended Vercel settings:
+
+```txt
+Framework Preset: Other
+Build Command: leave empty
+Output Directory: leave empty
+Root Directory: ./
+```
+
+Current live deployment:
+
+```txt
+https://vaidya-pi.vercel.app/
+```
+
+## Safety Note
+
+Vaidya.ai is a prototype for source-grounded exploration of Ayurveda reference material. Outputs may be incomplete, context-limited, or unsuitable for personal medical decisions. Always consult a qualified healthcare professional or Ayurvedic practitioner for diagnosis, treatment, dosage, contraindications, or urgent symptoms.
+
+## Future Scope
+
+- Multi-lingual Indic parsing for Sanskrit and regional language workflows.
+- Larger curated corpora with stronger citation metadata.
+- Practitioner review mode for auditing roadmap recommendations.
+- Botanical image matching for educational herb identification.
+- Offline or mobile-first packaging for field access.
