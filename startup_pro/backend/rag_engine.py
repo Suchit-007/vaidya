@@ -146,8 +146,13 @@ class RagEngine:
         norms[norms == 0] = 1.0
         self.tf_idf_matrix = self.tf_idf_matrix / norms
 
-    def query(self, search_text: str, top_k: int = 3) -> Dict[str, Any]:
-        """Executes ultra-fast hybrid retrieval over local indexed vectors."""
+    def query(self, search_text: str, top_k: int = 3, month: int = None, day: int = None) -> Dict[str, Any]:
+        """Executes ultra-fast hybrid retrieval over local indexed vectors with seasonal context."""
+        from startup_pro.backend.ritu_engine import get_current_ritu, get_ritu_adjustments
+        
+        ritu = get_current_ritu(month, day)
+        ritu_data = get_ritu_adjustments(ritu)
+        aggravated_doshas = ritu_data["aggravated_doshas"]
         tokens = self._tokenize(search_text)
         if not tokens or len(self.vocab) == 0:
             return {
@@ -178,6 +183,11 @@ class RagEngine:
             overlap_count = sum(1 for t in tokens if t in chunk_lower)
             # Add bonus boost for keyword density
             similarities[idx] += overlap_count * 0.08
+            
+            # Seasonal (Ritu) Boost: Reward chunks mentioning current aggravated doshas
+            for dosha in aggravated_doshas:
+                if dosha.lower() in chunk_lower:
+                    similarities[idx] += 0.1 # Seasonal relevance boost
 
         # Rank documents
         ranked_indices = np.argsort(similarities)[::-1]
@@ -213,7 +223,8 @@ class RagEngine:
             "top_chunks": [r["chunk"] for r in results],
             "scores": [r["score"] for r in results],
             "confidence_tier": confidence_tier,
-            "corroborating_chunks": adjusted_corroboration
+            "corroborating_chunks": adjusted_corroboration,
+            "ritu": ritu
         }
 
 # Pre-defined domain entities dictionary to highlight absolute innovation
