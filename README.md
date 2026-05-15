@@ -34,6 +34,22 @@ Vaidya.ai operates as an absolute domain-specific RAG (Retrieval-Augmented Gener
 
 ---
 
+## Product Screenshots
+
+### Source-Grounded Search
+![Vaidya.ai source-grounded search interface](docs/assets/screenshots/01-home-search.png)
+
+### Roadmap Timeline
+![Vaidya.ai phased roadmap timeline](docs/assets/screenshots/02-roadmap-timeline.png)
+
+### Roadmap Deep-Dive
+![Vaidya.ai roadmap bento detail cards](docs/assets/screenshots/03-roadmap-bento-detail.png)
+
+### Mobile Layout
+![Vaidya.ai mobile homepage layout](docs/assets/screenshots/04-mobile-home.png)
+
+---
+
 ## 3. Technical Architecture
 
 ```
