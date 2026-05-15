@@ -13,8 +13,9 @@ import openai
 # Load environment configuration
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
 
-from backend.rag_engine import RagEngine, extract_entities
-from backend.pdf_generator import generate_analysis_pdf
+from startup_pro.backend.rag_engine import RagEngine, extract_entities
+from startup_pro.backend.pdf_generator import generate_analysis_pdf
+from startup_pro.backend.fhir import generate_fhir_bundle
 
 app = FastAPI(title="Vaidya.ai API Engine", version="1.0.0")
 
@@ -331,6 +332,15 @@ async def export_analysis_pdf(data: dict):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
+
+@app.post("/api/export-fhir")
+async def export_fhir_json(data: dict):
+    """Generates an HL7 FHIR R4 Bundle for the provided analysis data."""
+    try:
+        fhir_bundle = generate_fhir_bundle(data)
+        return fhir_bundle
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"FHIR generation failed: {str(e)}")
 
 # WebSocket endpoint for multi-agent trace streaming
 @app.websocket("/ws/trace/{query_id}")

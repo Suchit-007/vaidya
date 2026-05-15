@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const entitiesGrid = document.getElementById('entities-grid');
   const ttsBtn = document.getElementById('tts-btn');
   const downloadPdfBtn = document.getElementById('download-pdf-btn');
+  const exportFhirBtn = document.getElementById('export-fhir-btn');
   const traceContainer = document.getElementById('trace-container');
   const traceSteps = document.getElementById('trace-steps');
   const consensusStatus = document.getElementById('consensus-status');
@@ -178,6 +179,9 @@ document.addEventListener('DOMContentLoaded', () => {
     lastResponseData = data;
     if (downloadPdfBtn) {
       downloadPdfBtn.style.display = 'inline-flex';
+    }
+    if (exportFhirBtn) {
+      exportFhirBtn.style.display = 'inline-flex';
     }
   }
 
@@ -661,6 +665,45 @@ document.addEventListener('DOMContentLoaded', () => {
         downloadPdfBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download Analysis PDF`;
       }
     });
+  // --- FHIR EXPORT INTEGRATION ---
+  if (exportFhirBtn) {
+    exportFhirBtn.addEventListener('click', async () => {
+      if (!lastResponseData) return;
+
+      try {
+        exportFhirBtn.disabled = true;
+        exportFhirBtn.innerHTML = `<svg class="spinner" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> Generating...`;
+
+        const response = await fetch(`${API_BASE}/api/export-fhir`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(lastResponseData)
+        });
+
+        if (!response.ok) throw new Error('FHIR export failed');
+
+        const bundle = await response.json();
+        const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        a.download = `Vaidya_FHIR_Bundle_${timestamp}.json`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+      } catch (err) {
+        console.error('FHIR Export Error:', err);
+        alert('Failed to generate FHIR clinical report.');
+      } finally {
+        exportFhirBtn.disabled = false;
+        exportFhirBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><path d="M9 14l2 2 4-4"></path></svg> Export to HMIS (FHIR)`;
+      }
+    });
+  }
+
   // --- MULTI-AGENT TRACE WOW FACTOR ---
   async function startVerificationTrace(queryStr) {
     traceContainer.classList.add('active');
