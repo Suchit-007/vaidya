@@ -39,14 +39,22 @@ Vaidya.ai operates as an absolute domain-specific RAG (Retrieval-Augmented Gener
 ### Source-Grounded Search
 ![Vaidya.ai source-grounded search interface](docs/assets/screenshots/01-home-search.png)
 
+Ask a focused Ayurveda question and review the generated answer beside confidence, source context, terminology highlights, and modern interpretation.
+
 ### Roadmap Timeline
 ![Vaidya.ai phased roadmap timeline](docs/assets/screenshots/02-roadmap-timeline.png)
+
+Convert a condition and dosha lens into a staged roadmap with objective, herb support, food guidance, and safety previews for each phase.
 
 ### Roadmap Deep-Dive
 ![Vaidya.ai roadmap bento detail cards](docs/assets/screenshots/03-roadmap-bento-detail.png)
 
+Open any roadmap phase into bento-style clinical cards that separate objectives, dosha impact, herbs, diet, safeguards, and daily practices.
+
 ### Mobile Layout
 ![Vaidya.ai mobile homepage layout](docs/assets/screenshots/04-mobile-home.png)
+
+Use the same source-grounded search and roadmap workflow on smaller screens with stacked controls and readable touch spacing.
 
 ---
 
