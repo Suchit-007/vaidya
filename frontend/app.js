@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const sourceBadgeText = document.getElementById('source-badge-text');
     if (sourceBadgeText) {
-      sourceBadgeText.textContent = data.source_text || 'Vaidya.ai Source Archives';
+      sourceBadgeText.textContent = data.source_text || 'Vaidya.ai Source Context';
     }
 
     // 2. Enhance answer text with entity hovers
@@ -160,8 +160,8 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    citationText.textContent = `"${data.source_line || 'Document ingestion context verified successfully.'}"`;
-    parallelText.textContent = data.modern_parallel || 'Standard systematic biomolecular equilibrium correlation.';
+    citationText.textContent = `"${data.source_line || 'Source context was retrieved for review.'}"`;
+    parallelText.textContent = data.modern_parallel || 'Use this interpretation as learning context, not as medical advice.';
 
     // 3. Render entity context drawers
     if (entities.length > 0) {
@@ -202,8 +202,8 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         resourcesList.innerHTML = `
           <div class="resource-item" style="opacity: 0.6;">
-            <h5>General Context verified</h5>
-            <p>Sourced from Vaidya.ai Verified Data Lake.</p>
+            <h5>General source context</h5>
+            <p>Drawn from the local Vaidya.ai reference set.</p>
           </div>
         `;
       }
@@ -298,7 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
       };
     } else {
       responseObj = {
-        answer: "Based on the provided classical knowledge texts, there is insufficient corroborative context to synthesize a verified answer for this specific query. To ensure absolute clinical safety and prevent automated hallucination, Vaidya.ai respects document constraints. Please consult a qualified Ayurvedic physician or medical practitioner for customized clinical guidance.",
+        answer: "Based on the available local reference texts, there is not enough corroborating context to answer this query responsibly. Vaidya.ai is keeping the response inside the retrieved source boundary. Please consult a qualified Ayurvedic physician or medical practitioner for personalized clinical guidance.",
         confidence_tier: "LOW",
         corroborating_chunks: 1,
         source_text: "Unverified Context Boundary",
@@ -351,7 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const severity = document.getElementById('severitySelect').value;
 
     if (!disease) {
-      alert("Please specify a condition or disease.");
+      alert("Please enter a condition or focus area before building a roadmap.");
       return;
     }
 
@@ -377,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
       renderPlan(plan);
     } catch (error) {
       console.error('Roadmap generation error:', error);
-      alert("Failed to generate roadmap. Please check your connection.");
+      alert("Roadmap generation failed. Please check the local server and try again.");
     } finally {
       loaderContainer.classList.remove('remove');
       loaderContainer.classList.remove('active');
@@ -386,8 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderPlan(plan) {
-    const nodesContainer = document.getElementById('mindmap-nodes');
-    const linksContainer = document.getElementById('mindmap-links');
+    const timelineContainer = document.getElementById('roadmap-timeline');
     
     // Ensure container is visible before calculating positions
     roadmapResult.style.display = 'block';
@@ -395,120 +394,80 @@ document.addEventListener('DOMContentLoaded', () => {
     responseContainer.classList.add('active');
 
     // Clear previous
-    nodesContainer.innerHTML = '';
-    linksContainer.innerHTML = '';
+    timelineContainer.innerHTML = '';
     
     const disease = document.getElementById('diseaseInput').value.trim() || "Condition";
-    
-    // Define spatial layout (relative coordinates)
-    const centerX = 50;
-    const centerY = 50;
-    
-    // Extract phases from plan
     const phasesData = plan.phases || [];
-    
-    // 1. Create Hub (Central Node)
-    const hubNode = document.createElement('div');
-    hubNode.className = 'mm-node hub center';
-    hubNode.style.left = `${centerX}%`;
-    hubNode.style.top = `${centerY}%`;
-    hubNode.style.transform = 'translate(-50%, -50%)';
-    hubNode.innerHTML = `
-      <i class="isax isax-judge"></i>
-      <span>${disease}</span>
-      <div class="label">Primary Analysis</div>
-    `;
-    nodesContainer.appendChild(hubNode);
+    const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[char]));
 
-    // 2. Create Phase Nodes & Links
-    const phasePositions = [
-      { x: 50, y: 15, angle: -90 }, // Top
-      { x: 85, y: 65, angle: 30 },  // Bottom Right
-      { x: 15, y: 65, angle: 150 }  // Bottom Left
-    ];
+    const getHerbName = (herb) => typeof herb === 'string' ? herb : (herb?.name || 'Classical formulation');
+    const phaseSummary = (phase) => phase.objective || phase.tasks?.[0] || 'A focused support phase for the selected condition.';
+    const previewList = (items, fallback) => (items && items.length ? items : fallback).slice(0, 2);
 
-    const phases = phasesData.map((data, index) => {
-      const pos = phasePositions[index % phasePositions.length];
-      
-      // Create Node
-      const node = document.createElement('div');
-      node.className = 'mm-node phase';
-      node.style.left = `${pos.x}%`;
-      node.style.top = `${pos.y}%`;
-      node.style.transform = 'translate(-50%, -50%)';
-      
-      const titleParts = data.title.split(':');
-      node.innerHTML = `
-        <span>${titleParts[0]}</span>
-        <div class="label">${titleParts[1] || data.title}</div>
+    phasesData.forEach((phase, index) => {
+      const titleParts = (phase.title || `Phase ${index + 1}`).split(':');
+      const titleLead = titleParts[0] || `Phase ${index + 1}`;
+      const titleDetail = titleParts.slice(1).join(':').trim();
+      const herbs = previewList((phase.herbs || []).map(getHerbName), ['Practitioner-guided formulation']);
+      const diet = previewList(phase.diet?.allow, ['Warm water', 'Fresh cooked meals']);
+      const precautions = previewList(phase.precautions, ['Avoid heavy/cold foods']);
+
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'roadmap-phase-card';
+      card.setAttribute('aria-label', `Open ${phase.title || titleLead} clinical details`);
+      card.innerHTML = `
+        <div class="phase-marker" aria-hidden="true">${index + 1}</div>
+        <div class="phase-card-shell">
+          <div class="phase-card-header">
+            <div>
+              <span class="phase-kicker">Phase ${index + 1}</span>
+              <h3>${escapeHtml(titleLead)}${titleDetail ? `: <span>${escapeHtml(titleDetail)}</span>` : ''}</h3>
+            </div>
+            <span class="phase-open">Review phase</span>
+          </div>
+          <p class="phase-objective">${escapeHtml(phaseSummary(phase))}</p>
+          <div class="phase-preview-grid">
+            <div>
+              <h4>Herb support</h4>
+              <ul>${herbs.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
+            </div>
+            <div>
+              <h4>Food guidance</h4>
+              <ul>${diet.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
+            </div>
+            <div>
+              <h4>Safety</h4>
+              <ul>${precautions.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>
+            </div>
+          </div>
+        </div>
       `;
-      
-      node.addEventListener('click', () => {
-        document.querySelectorAll('.mm-node').forEach(n => n.classList.remove('is-active'));
-        node.classList.add('is-active');
-        showBentoDetails(data, disease);
+
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.roadmap-phase-card').forEach(item => item.classList.remove('is-active'));
+        card.classList.add('is-active');
+        showBentoDetails(phase, disease);
       });
 
-      nodesContainer.appendChild(node);
-
-      // Create SVG Link (Path)
-      const link = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      link.setAttribute("class", "mm-link");
-      linksContainer.appendChild(link);
-
-      return { el: node, link: link, angle: pos.angle, distance: 35 };
+      timelineContainer.appendChild(card);
     });
-
-    // Update SVG paths using Organic Bezier Curves
-    const updatePaths = () => {
-      const rect = nodesContainer.getBoundingClientRect();
-      if (rect.width === 0) return;
-      
-      phases.forEach((p, index) => {
-        const pos = phasePositions[index % phasePositions.length];
-        const x1 = rect.width * (centerX / 100);
-        const y1 = rect.height * (centerY / 100);
-        const x2 = rect.width * (pos.x / 100);
-        const y2 = rect.height * (pos.y / 100);
-        
-        // Calculate control point for Quadratic Bezier (organic curve)
-        const midX = (x1 + x2) / 2;
-        const midY = (y1 + y2) / 2;
-        
-        // Offset the control point perpendicular to the line
-        const dx = x2 - x1;
-        const dy = y2 - y1;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        const offset = dist * 0.15; // 15% curvature
-        
-        const cx = midX - (dy / dist) * offset;
-        const cy = midY + (dx / dist) * offset;
-        
-        p.link.setAttribute("class", "link-path");
-        p.link.setAttribute("d", `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`);
-      });
-    };
-    
-    setTimeout(updatePaths, 100);
-    window.addEventListener('resize', updatePaths);
 
     // Initial Animation
     if (typeof anime !== 'undefined') {
       anime({
-        targets: '.mm-node',
-        scale: [0, 1],
+        targets: '.roadmap-phase-card',
+        translateY: [18, 0],
         opacity: [0, 1],
         delay: anime.stagger(100),
-        easing: 'easeOutBack',
-        duration: 800
-      });
-      
-      anime({
-        targets: '.mm-link',
-        strokeDashoffset: [anime.setDashoffset, 0],
-        easing: 'easeInOutSine',
-        duration: 1000,
-        delay: 500
+        easing: 'easeOutCubic',
+        duration: 520
       });
     }
   }
@@ -518,52 +477,80 @@ document.addEventListener('DOMContentLoaded', () => {
    */
   function showBentoDetails(phase, disease) {
     const overlay = document.getElementById('bento-overlay');
-    const viewport = document.getElementById('mindmap-container');
+    const timeline = document.getElementById('roadmap-timeline');
+    const roadmapContent = document.getElementById('roadmap-content');
     
-    if (!overlay || !viewport) return;
+    if (!overlay || !timeline) return;
 
     // 1. Show overlay immediately to avoid layout thrashing
-    viewport.classList.add('is-blurred');
+    if (roadmapContent) roadmapContent.classList.add('bento-open');
+    timeline.setAttribute('aria-hidden', 'true');
     overlay.classList.add('active');
 
     try {
       // 2. Populate Content
+      const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char]));
+
       const titleEl = document.getElementById('bento-title');
       const objectiveEl = document.getElementById('bento-objective');
+      const objectiveNoteEl = document.getElementById('bento-objective-note');
       if (titleEl) titleEl.innerText = phase.title;
-      if (objectiveEl) objectiveEl.innerText = phase.objective || `Primary goal: ${phase.title} for ${disease}. Focus on balancing physiological markers and system preparation.`;
+      if (objectiveEl) objectiveEl.innerText = phase.objective || `Primary aim: support ${disease} through this stage while keeping recommendations bounded and reviewable.`;
+      if (objectiveNoteEl) {
+        const taskCount = (phase.tasks || []).length;
+        const herbCount = (phase.herbs || []).length;
+        objectiveNoteEl.innerText = `This phase combines ${herbCount || 'selected'} herb support item${herbCount === 1 ? '' : 's'}, food guidance, and ${taskCount || 'daily'} practice${taskCount === 1 ? '' : 's'} into one reviewable step.`;
+      }
       
       // Herbs
       const herbsList = document.getElementById('bento-herbs');
+      const herbContext = document.getElementById('bento-herb-context');
       if (herbsList) {
-        herbsList.innerHTML = (phase.herbs || ["Standard Ayurvedic Formulations"]).map(h => {
-            const hName = typeof h === 'string' ? h : (h.name || 'Unknown Herb');
+        herbsList.innerHTML = (phase.herbs || ["Practitioner-guided formulation"]).map(h => {
+            const hName = typeof h === 'string' ? h : (h.name || 'Practitioner-guided formulation');
             const hDosage = (h && typeof h === 'object') ? (h.dosage || 'As directed') : 'As directed';
             const hTiming = (h && typeof h === 'object') ? (h.timing || 'Post-meal') : 'Post-meal';
-            return `<li><strong>${hName}</strong>: ${hDosage} (${hTiming})</li>`;
+            return `
+              <li class="herb-row">
+                <span class="herb-name">${escapeHtml(hName)}</span>
+                <span class="herb-meta">${escapeHtml(hDosage)} · ${escapeHtml(hTiming)}</span>
+              </li>
+            `;
         }).join('');
+      }
+      if (herbContext) {
+        const herbNames = (phase.herbs || []).map(h => typeof h === 'string' ? h : h?.name).filter(Boolean);
+        herbContext.innerText = herbNames.length
+          ? `This phase highlights ${herbNames.slice(0, 2).join(', ')}${herbNames.length > 2 ? ` and ${herbNames.length - 2} more` : ''}. Treat the dose and timing as review points, not self-prescribing instructions.`
+          : 'Herb suggestions are shown as planning context. Confirm suitability, dose, and interactions with a qualified practitioner.';
       }
 
       // Diet
       const dietAllow = document.getElementById('bento-diet-allow');
       const dietAvoid = document.getElementById('bento-diet-avoid');
-      if (dietAllow) dietAllow.innerHTML = (phase.diet?.allow || ["Warm water", "Fresh fruits", "Ghee"]).map(i => `<li>${i}</li>`).join('');
-      if (dietAvoid) dietAvoid.innerHTML = (phase.diet?.avoid || ["Cold drinks", "Deep fried", "Processed food"]).map(i => `<li>${i}</li>`).join('');
+      if (dietAllow) dietAllow.innerHTML = (phase.diet?.allow || ["Warm water", "Fresh fruits", "Ghee"]).map(i => `<li>${escapeHtml(i)}</li>`).join('');
+      if (dietAvoid) dietAvoid.innerHTML = (phase.diet?.avoid || ["Cold drinks", "Deep fried", "Processed food"]).map(i => `<li>${escapeHtml(i)}</li>`).join('');
 
       // NEW: Precautions
       const precautionList = document.getElementById('bento-precautions');
       if (precautionList) {
-        const defaults = ["Avoid excessive physical exertion", "No heavy/cold foods", "Maintain steady hydration"];
-        precautionList.innerHTML = (phase.precautions || defaults).map(p => `<li>${p}</li>`).join('');
+        const defaults = ["Avoid excessive physical exertion", "Avoid heavy or very cold foods", "Consult a practitioner for personalized dosing"];
+        precautionList.innerHTML = (phase.precautions || defaults).map(p => `<li>${escapeHtml(p)}</li>`).join('');
       }
 
       // Tasks
       const tasksGrid = document.getElementById('bento-tasks');
       if (tasksGrid) {
-        tasksGrid.innerHTML = (phase.tasks || ["Daily Abhyanga", "Surya Namaskar", "Pranayama"]).map(t => `
+        tasksGrid.innerHTML = (phase.tasks || ["Gentle daily routine", "Breathwork", "Consistent rest window"]).map(t => `
           <div class="task-item">
             <i class="isax isax-tick-circle"></i>
-            <span>${t}</span>
+            <span>${escapeHtml(t)}</span>
           </div>
         `).join('');
       }
@@ -620,9 +607,10 @@ document.addEventListener('DOMContentLoaded', () => {
    */
   function hideBentoDetails() {
     const overlay = document.getElementById('bento-overlay');
-    const viewport = document.getElementById('mindmap-container');
+    const timeline = document.getElementById('roadmap-timeline');
+    const roadmapContent = document.getElementById('roadmap-content');
     
-    if (!overlay || !viewport) return;
+    if (!overlay || !timeline) return;
 
     if (typeof anime !== 'undefined') {
       anime({
@@ -634,14 +622,16 @@ document.addEventListener('DOMContentLoaded', () => {
         duration: 400,
         complete: () => {
           overlay.classList.remove('active');
-          viewport.classList.remove('is-blurred');
-          document.querySelectorAll('.mm-node').forEach(n => n.classList.remove('is-active'));
+          if (roadmapContent) roadmapContent.classList.remove('bento-open');
+          timeline.removeAttribute('aria-hidden');
+          document.querySelectorAll('.roadmap-phase-card').forEach(n => n.classList.remove('is-active'));
         }
       });
     } else {
       overlay.classList.remove('active');
-      viewport.classList.remove('is-blurred');
-      document.querySelectorAll('.mm-node').forEach(n => n.classList.remove('is-active'));
+      if (roadmapContent) roadmapContent.classList.remove('bento-open');
+      timeline.removeAttribute('aria-hidden');
+      document.querySelectorAll('.roadmap-phase-card').forEach(n => n.classList.remove('is-active'));
     }
   }
 
@@ -650,11 +640,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (closeBentoBtn) {
     closeBentoBtn.onclick = () => {
       const overlay = document.getElementById('bento-overlay');
-      const viewport = document.getElementById('mindmap-container');
+      const timeline = document.getElementById('roadmap-timeline');
+      const roadmapContent = document.getElementById('roadmap-content');
       
       overlay.classList.remove('active');
-      viewport.classList.remove('is-blurred');
-      document.querySelectorAll('.mm-node').forEach(n => n.classList.remove('is-active'));
+      if (roadmapContent) roadmapContent.classList.remove('bento-open');
+      if (timeline) timeline.removeAttribute('aria-hidden');
+      document.querySelectorAll('.roadmap-phase-card').forEach(n => n.classList.remove('is-active'));
     };
   }
 
@@ -680,18 +672,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     recognition.onstart = () => {
       voiceBtn.classList.add('listening');
-      searchInput.placeholder = "Listening to your health query...";
+      searchInput.placeholder = "Listening to your question...";
     };
 
     recognition.onerror = (event) => {
       console.warn('Speech recognition error payload:', event.error);
       voiceBtn.classList.remove('listening');
-      searchInput.placeholder = "Ask health or concept-based questions...";
+      searchInput.placeholder = "Ask about a concept, herb, symptom pattern, or care principle...";
     };
 
     recognition.onend = () => {
       voiceBtn.classList.remove('listening');
-      searchInput.placeholder = "Ask health or concept-based questions...";
+      searchInput.placeholder = "Ask about a concept, herb, symptom pattern, or care principle...";
     };
 
     recognition.onresult = (event) => {
@@ -733,14 +725,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- NATIVE SPEECH SYNTHESIS INTEGRATION (VOICE OUTPUT) ---
   ttsBtn.addEventListener('click', () => {
     if (!window.speechSynthesis) {
-      alert("Text-to-Speech synthesis is not natively supported in your browser.");
+      alert("Audio playback is not supported in this browser.");
       return;
     }
 
     // If currently speaking, toggle termination
     if (window.speechSynthesis.speaking) {
       window.speechSynthesis.cancel();
-      ttsBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg> Read Answer Aloud`;
+      ttsBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg> Listen to Answer`;
       return;
     }
 
@@ -760,15 +752,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     utterance.onstart = () => {
-      ttsBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg> Stop Audio Voice`;
+      ttsBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg> Stop Audio`;
     };
 
     utterance.onend = () => {
-      ttsBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg> Read Answer Aloud`;
+      ttsBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg> Listen to Answer`;
     };
 
     utterance.onerror = () => {
-      ttsBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg> Read Answer Aloud`;
+      ttsBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg> Listen to Answer`;
     };
 
     window.speechSynthesis.speak(utterance);
@@ -781,7 +773,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       try {
         downloadPdfBtn.disabled = true;
-        downloadPdfBtn.innerHTML = `<svg class="spinner" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> Generating...`;
+        downloadPdfBtn.innerHTML = `<svg class="spinner" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> Preparing PDF...`;
 
         const response = await fetch(`${API_BASE}/api/export-pdf`, {
           method: 'POST',
@@ -804,10 +796,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       } catch (err) {
         console.error('PDF Download Error:', err);
-        alert('Failed to generate clinical PDF report. Please try again.');
+        alert('PDF export failed. Please try again.');
       } finally {
         downloadPdfBtn.disabled = false;
-        downloadPdfBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download Analysis PDF`;
+        downloadPdfBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Export PDF`;
       }
     });
   }

@@ -178,7 +178,7 @@ def get_pre_cached_fallback(query: str) -> dict:
     else:
         # Default Low Confidence boundary state indicating clean constraint handling
         return {
-            "answer": "Based on the provided classical knowledge texts, there is insufficient corroborative context to synthesize a verified answer for this specific query. To ensure absolute clinical safety and prevent automated hallucination, Vaidya.ai respects document constraints. Please consult a qualified Ayurvedic physician or medical practitioner for customized clinical guidance.",
+            "answer": "Based on the available local reference texts, there is not enough corroborating context to answer this query responsibly. Vaidya.ai is keeping the response inside the retrieved source boundary. Please consult a qualified Ayurvedic physician or medical practitioner for personalized clinical guidance.",
             "confidence_tier": "LOW",
             "corroborating_chunks": 1,
             "source_text": "Unverified Context Boundary",

@@ -2,8 +2,9 @@ import requests
 import json
 
 BASE_URL = "http://localhost:8000"
+__test__ = False
 
-def test_query(query):
+def run_query(query):
     print(f"\nTesting Query: {query}")
     try:
         response = requests.post(f"{BASE_URL}/api/query", json={"query": query})
@@ -18,5 +19,5 @@ def test_query(query):
         print(f"Connection failed: {e}")
 
 if __name__ == "__main__":
-    test_query("What is Yogavahi?")
-    test_query("Explain Anupana")
+    run_query("What is Yogavahi?")
+    run_query("Explain Anupana")

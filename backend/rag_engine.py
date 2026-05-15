@@ -8,6 +8,19 @@ try:
 except ImportError:
     pypdf = None
 
+class QueryResult(dict):
+    """Dictionary API response with compatibility access for legacy score checks."""
+    def __len__(self):
+        return len(self.get("top_chunks", []))
+
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            return {
+                "chunk": self["top_chunks"][key],
+                "confidence_score": self.get("scores", [])[key],
+            }
+        return super().__getitem__(key)
+
 class RagEngine:
     def __init__(self, data_path: str):
         self.data_path = data_path
@@ -59,10 +72,16 @@ class RagEngine:
             if is_pdf:
                 if pypdf is None:
                     continue
-                reader = pypdf.PdfReader(file_path)
+                try:
+                    reader = pypdf.PdfReader(file_path)
+                except Exception:
+                    continue
                 full_text = []
                 for page in reader.pages:
-                    extracted = page.extract_text()
+                    try:
+                        extracted = page.extract_text()
+                    except Exception:
+                        extracted = None
                     if extracted:
                         full_text.append(extracted)
                 combined_text = " ".join(full_text)
@@ -103,8 +122,10 @@ class RagEngine:
         self._build_tfidf_index()
 
     def _tokenize(self, text: str) -> List[str]:
-        """Simple lowercase alphanumeric tokenization."""
-        return re.findall(r'\b[a-z]{3,}\b', text.lower())
+        """Lowercase tokenization retaining adjacent bigrams for phrase matching."""
+        unigrams = re.findall(r'\b[a-z]{3,}\b', text.lower())
+        bigrams = [f"{unigrams[i]} {unigrams[i + 1]}" for i in range(len(unigrams) - 1)]
+        return unigrams + bigrams
 
     def _build_tfidf_index(self):
         """Builds an extremely precise, efficient inline TF-IDF matrix for pure offline RAG."""
@@ -150,11 +171,12 @@ class RagEngine:
         """Executes ultra-fast hybrid retrieval over local indexed vectors."""
         tokens = self._tokenize(search_text)
         if not tokens or len(self.vocab) == 0:
-            return {
+            return QueryResult({
                 "top_chunks": self.chunks[:top_k],
+                "scores": [0.0 for _ in self.chunks[:top_k]],
                 "confidence_tier": "LOW",
                 "corroborating_chunks": 1
-            }
+            })
 
         # Query Vectorization
         query_vec = np.zeros(len(self.vocab), dtype=np.float32)
@@ -209,12 +231,12 @@ class RagEngine:
             confidence_tier = "LOW"
             adjusted_corroboration = 1
 
-        return {
+        return QueryResult({
             "top_chunks": [r["chunk"] for r in results],
             "scores": [r["score"] for r in results],
             "confidence_tier": confidence_tier,
             "corroborating_chunks": adjusted_corroboration
-        }
+        })
 
 # Pre-defined domain entities dictionary to highlight absolute innovation
 AYURVEDIC_ENTITIES = {
