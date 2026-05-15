@@ -2,7 +2,8 @@ import os
 import json
 import re
 from typing import Optional, List, Dict, Any
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -13,6 +14,7 @@ import openai
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
 
 from backend.rag_engine import RagEngine, extract_entities
+from backend.pdf_generator import generate_analysis_pdf
 
 app = FastAPI(title="Vaidya.ai API Engine", version="1.0.0")
 
@@ -219,6 +221,20 @@ Schema:
         print(f"API Completion interception triggered: {e}. Falling back to flawless pre-cached engine suite.")
         cached = get_pre_cached_fallback(query_str)
         return QueryResponse(**cached)
+
+@app.post("/api/export-pdf")
+async def export_analysis_pdf(data: dict):
+    """Generates and streams a PDF report for the provided analysis data."""
+    try:
+        pdf_buffer = generate_analysis_pdf(data)
+        filename = f"Vaidya_Analysis_{data.get('confidence_tier', 'Report')}.pdf"
+        return StreamingResponse(
+            pdf_buffer, 
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {str(e)}")
 
 # Mount premium frontend app static serving at root directory path
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
